@@ -91,7 +91,7 @@ void main(List<String> arguments) async {
     'DISPLAY_NAME': makeConfig['display_name'] ?? 'Ckbox',
     'PUBLISHER_NAME': makeConfig['publisher'] ?? 'ckbox',
     'ARCH': arch == 'arm64' ? 'arm64' : 'x64',
-    'PUBLISHER_URL': makeConfig['publisher_url'] ?? 'https://github.com/ipevel/Ckbox',
+    'PUBLISHER_URL': makeConfig['publisher_url'] ?? 'https://github.com/ipevel/ckbox',
     'CREATE_DESKTOP_ICON': true,
     'LAUNCH_AT_STARTUP': true,
     'INSTALL_DIR_NAME': '{autopf64}\\${makeConfig['display_name'] ?? 'Ckbox'}',
