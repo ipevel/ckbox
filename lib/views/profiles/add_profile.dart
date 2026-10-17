@@ -7,6 +7,7 @@ import 'package:ckbox/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'edit_profile.dart';
+import 'panel_login_view.dart';
 import 'tv_qr_import_dialog.dart';
 
 class AddProfileView extends StatelessWidget {
@@ -105,6 +106,23 @@ class AddProfileView extends StatelessWidget {
     _handleAddProfileFormURL('');
   }
 
+  Future<void> _handlePanelLogin() async {
+    showExtend(
+      context,
+      builder: (_, type) {
+        return AdaptiveSheetScaffold(
+          type: type,
+          title: '面板登录',
+          body: PanelLoginView(
+            onLogin: (subscribeUrl) async {
+              await _handleAddProfileFormURL(subscribeUrl);
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(context) {
     return ScrollEdgeRise(
@@ -172,6 +190,23 @@ class AddProfileView extends StatelessWidget {
                   title: Text(appLocalizations.url),
                   subtitle: Text(appLocalizations.urlDesc),
                   onTap: _toAdd,
+                ),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: context.colorScheme.outlineVariant.withValues(
+                    alpha: context.colorScheme.brightness == Brightness.light
+                        ? 0.6
+                        : 0.45,
+                  ),
+                  indent: 16,
+                  endIndent: 16,
+                ),
+                ListItem(
+                  leading: const Icon(Icons.account_circle_outlined),
+                  title: const Text('面板登录'),
+                  subtitle: const Text('登录 Xboard / v2board 面板，导入订阅'),
+                  onTap: _handlePanelLogin,
                 ),
               ],
             ),
