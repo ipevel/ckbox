@@ -1,8 +1,7 @@
 name: build
 
-# ckbox CI 骨架（步骤 1：建仓 + 许可 + 签名流水线占位）
-# 目标：Android + Windows 双端。后续步骤逐平台填充真实构建命令。
-# 参考源：bettbox .github/workflows/build.yaml（保留签名链结构，标识替换为 Ckbox）
+# ckbox CI：Android + Windows 双端构建与发布
+# 签名链路：构建未签名产物 → 签名服务 → 回填已签名产物 → 打包安装器
 
 on:
   push:
@@ -16,7 +15,7 @@ env:
   GRADLE_OPTS: -Dorg.gradle.vfs.watch=false
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   SENTRY_BACKEND: none
-  # 签名流水线占位（步骤 7 接入）：SignPath token 与 Android keystore 从 secrets 注入
+  # 签名凭据从 GitHub Secrets 注入
   SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
   IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN || vars.IPINFO_TOKEN }}
 
@@ -78,7 +77,7 @@ jobs:
         if: matrix.platform == 'windows'
         run: git config --global core.longpaths true
 
-      # --- Android 签名（步骤 7 接入 keystore，当前占位） ---
+      # --- Android 签名：keystore 从 secrets 注入 ---
       - name: Setup Keystore (Android)
         if: matrix.platform == 'android'
         run: |
@@ -143,13 +142,13 @@ jobs:
           cd android
           flutter clean
 
-      # --- TODO(步骤 2/3/4/5/6)：真实构建步骤（内核迁移、Dart 层、Rust 服务、双端组装）完成后填充 ---
+      # --- TODO：真实构建步骤 ---
       # - 内核先行：core/ + Clash.Meta 迁移 + go build
       # - Dart 层：flutter pub get + build_runner + setup.dart
       # - Rust 服务：cargo build --release
       # - 双端组装：flutter build windows / apk
 
-      # --- Windows 签名链（步骤 7 接入，当前保留 SignPath 结构占位） ---
+      # --- Windows 签名链：待签名服务接入 ---
       - name: Install SignPath (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -183,9 +182,8 @@ jobs:
           "EXE_SIGNING_POLICY_SLUG=$exePolicy" | Out-File -FilePath $env:GITHUB_ENV -Append
           "INSTALLER_SIGNING_POLICY_SLUG=$installerPolicy" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      # TODO(步骤 7)：SignPath submit-signing-request 三个对象（core / helper / exe / installer）
-      # organization-id 与 project-slug 待 ckbox 申请 SignPath 项目后填入，替换 bettbox 的
-      # '0d3f8e8e-3f4d-4ac8-ab3f-d6c5c110ab0d' / 'Bettbox'
+      # TODO：接入签名服务，对四个对象分别提交签名请求（core / helper / exe / installer）
+      # organization-id 与 project-slug 待 ckbox 签名项目申请通过后填入
 
   upload:
     permissions: write-all
@@ -205,7 +203,7 @@ jobs:
           merge-multiple: true
           skip-decompress: true
 
-      # TODO(步骤 5/6)：双端组装完成后，确定 release 产物命名与 release.md 生成
+      # TODO：确定 release 产物命名与 release.md 生成
 
       - name: Generate release.md
         run: |

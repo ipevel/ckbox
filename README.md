@@ -1,47 +1,61 @@
 # ⚡ Ckbox
 
-**Ckbox 是一款多平台代理客户端（Android + Windows），基于 Bettbox 架构的完全重写，内核对齐 Clash.Meta（mihomo）。**
+**Ckbox 是一款多平台代理客户端（Android + Windows），以 Flutter 构建界面，以 Mihomo（Clash.Meta）作为内核。**
 
-> 许可证：GPL-3.0（与参考源 Bettbox 及来源血统 FlClash/LiClash 兼容）
-> 参考源：Bettbox v1.19.5（https://github.com/appshubcc/Bettbox）
+> 许可证：GPL-3.0
 
 ## 定位
 
-Ckbox = **「Bettbox 完整架构的照搬 + 面板账号体系的唯一新增」**。
+Ckbox 关注隐私、安全与使用细节，提供稳定流畅的 TUN/VPN 体验：
 
-- 双端统一 Flutter UI
-- 内核：Bettbox 自 fork 的 Clash.Meta
-- Windows 提权：Rust SYSTEM 常驻服务 + HMAC 命名管道 RPC
-- 新增：面板账号登录 / 订阅管理 / 应用内自更新
+- **双端统一**：Android 与 Windows 共用一套 Flutter UI
+- **内核**：Mihomo（Clash.Meta）内核，支持 TUN / 代理 / DNS / 规则分流
+- **Windows 提权**：SYSTEM 常驻服务 + HMAC 命名管道 RPC，UI 进程保持用户态
+- **面板集成**：内置面板账号登录与订阅管理
+- **跨端保活**：前台服务、磁贴、开机自启、应用更新唤醒等多重保障
 
-## 项目状态
+## 核心特性
 
-**当前：代码迁移完成 + 面板账号体系核心已实现。** 待编译验证与签名申请。
+* **开箱即用**：稳定的权限处理与 TUN/VPN 体验，大量预置优化细节。
+* **精雕细琢**：打磨每处 UI 与交互细节，前台流畅，移动端低能耗。
+* **安全守护**：内核遵循各平台最小权限原则，Windows 端内核与提权服务受可执行文件白名单校验保护。
+* **性能优先**：支持原生 ARM64，提供硬件分级与深度优化。
+* **增强工具**：多平台无感智能启停、一键禁用 QUIC、托盘菜单增强、媒体解锁检测、脚本引擎等。
 
-按 `ckbox-spec/ckbox-实施规格.md` 的执行顺序：
+## 架构
 
-1. ✅ 建仓 + 许可（GPL-3.0）+ CI 骨架 + 签名流水线占位
-2. ✅ 内核先行（core/ + Clash.Meta 迁移，纳入版本控制）
-3. ✅ Dart 层搬迁（lib 127,936 行 + plugins 27,659 行，标识替换）
-4. ✅ Rust 特权服务（按「取舍照搬不修」口径，含 D2-D6 缺陷照搬）
-5. ✅ Windows 端组装（runner + Inno Setup + 打包）
-6. ✅ Android 端组装（Kotlin + JNI + Manifest，包名 com.ckbox.app）
-7. ⬜ 签名接入（SignPath 申请 + keystore 生成，占位已就绪，需用户）
-8. ✅ 产品增量：面板账号体系（模型 + 客户端 + 存储 + 登录 UI + 管理 UI + 测试）
+| 层 | 技术 |
+|---|---|
+| UI | Flutter（Dart） |
+| 内核 | Mihomo / Clash.Meta（Go） |
+| Windows 提权服务 | Rust（SCM 服务 + HMAC 命名管道） |
+| Android 宿主 | Kotlin + JNI |
 
-> 口径：26 条缺陷按用户「取舍照搬不修」全部照原样保留，仅做标识替换（bettbox→ckbox）。
+Windows 端由四个进程组成：用户态 UI、内核进程、SYSTEM 提权服务、UWP 回环豁免工具；内核与 UI 通过 `external-controller` 通信，UI 与提权服务通过命名管道通信。
 
-## 规格文档
+## 致谢
 
-- 实施规格：`ckbox-spec/ckbox-实施规格.md`
-- 面板接口深读：`ckbox-spec/ckbox-面板接口深读.md`
-- 上游同步基线：`ckbox-spec/ckbox-bettbox同步基线.md`（**只追 Bettbox 稳定版，不追测试版**）
+Ckbox 站在开源社区的肩膀上。
 
-## 上游跟随
+- **[Mihomo / Clash.Meta](https://github.com/MetaCubeX/mihomo)** — 内核
+- **[FlClash](https://github.com/chen08209/FlClash)** — 界面血统
+- **[Bettbox](https://github.com/appshubcc/Bettbox)** — 本项目在其基础上重构演进，感谢原作者的开源工作
 
-- 当前跟随 Bettbox **v1.19.5**（稳定版），策略见同步基线文档。
-- 只追 `vX.Y.Z` 稳定版，不追 `-pre*`/`-test` 测试版；同步由维护者触发。
+本项目遵循 GPL-3.0 发布。
 
-## 构建
+## 开发
 
-待双端组装完成后补充（CI 骨架见 `.github/workflows/build.yaml`）。
+```bash
+# 依赖
+flutter pub get
+
+# 静态分析 / 测试
+flutter analyze
+flutter test
+
+# 构建
+dart setup.dart android --arch arm64
+dart setup.dart windows --arch amd64
+```
+
+CI 见 `.github/workflows/build.yaml`。
