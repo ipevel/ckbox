@@ -35,6 +35,12 @@ Ckbox = **「Bettbox 完整架构的照搬 + 面板账号体系的唯一新增�
 
 - 实施规格：`ckbox-spec/ckbox-实施规格.md`
 - 面板接口深读：`ckbox-spec/ckbox-面板接口深读.md`
+- 上游同步基线：`ckbox-spec/ckbox-bettbox同步基线.md`（**只追 Bettbox 稳定版，不追测试版**）
+
+## 上游跟随
+
+- 当前跟随 Bettbox **v1.19.5**（稳定版），策略见同步基线文档。
+- 只追 `vX.Y.Z` 稳定版，不追 `-pre*`/`-test` 测试版；同步由维护者触发。
 
 ## 构建
 
