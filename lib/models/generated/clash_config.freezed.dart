@@ -3298,7 +3298,7 @@ return $default(_that.mmdb,_that.asn,_that.geosite);case _:
 @JsonSerializable()
 
 class _GeoXUrl implements GeoXUrl {
-  const _GeoXUrl({this.mmdb = 'https://github.com/ipevel/clash-rulesets/releases/download/latest/geoip.metadb', this.asn = 'https://github.com/ipevel/clash-rulesets/releases/download/latest/GeoLite2-ASN.mmdb', this.geosite = 'https://github.com/ipevel/clash-rulesets/releases/download/latest/geosite.dat'});
+  const _GeoXUrl({this.mmdb = 'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geoip.metadb', this.asn = 'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/ASN.mmdb', this.geosite = 'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geosite.dat'});
   factory _GeoXUrl.fromJson(Map<String, dynamic> json) => _$GeoXUrlFromJson(json);
 
 @override@JsonKey() final  String mmdb;

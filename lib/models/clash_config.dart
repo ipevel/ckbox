@@ -500,15 +500,15 @@ abstract class Experimental with _$Experimental {
 abstract class GeoXUrl with _$GeoXUrl {
   const factory GeoXUrl({
     @Default(
-      'https://github.com/ipevel/clash-rulesets/releases/download/latest/geoip.metadb',
+      'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geoip.metadb',
     )
     String mmdb,
     @Default(
-      'https://github.com/ipevel/clash-rulesets/releases/download/latest/GeoLite2-ASN.mmdb',
+      'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/ASN.mmdb',
     )
     String asn,
     @Default(
-      'https://github.com/ipevel/clash-rulesets/releases/download/latest/geosite.dat',
+      'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geosite.dat',
     )
     String geosite,
   }) = _GeoXUrl;

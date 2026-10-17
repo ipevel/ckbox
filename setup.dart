@@ -356,17 +356,17 @@ class Build {
   static const List<AssetDownloadItem> assetDownloadItems = [
     AssetDownloadItem(
       url:
-          'https://github.com/ipevel/clash-rulesets/releases/download/latest/geosite.dat',
+          'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geosite.dat',
       fileName: 'GeoSite.dat',
     ),
     AssetDownloadItem(
       url:
-          'https://github.com/ipevel/clash-rulesets/releases/download/latest/geoip.metadb',
+          'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geoip.metadb',
       fileName: 'geoip.metadb',
     ),
     AssetDownloadItem(
       url:
-          'https://github.com/ipevel/clash-rulesets/releases/download/latest/GeoLite2-ASN-lite.mmdb',
+          'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/ASN.mmdb',
       fileName: 'ASN.mmdb',
     ),
     AssetDownloadItem(
