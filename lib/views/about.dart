@@ -58,11 +58,11 @@ class AboutView extends StatelessWidget {
         onTap: () => globalState.openUrl('https://telegram.me/ckbox_channel'),
       ),
       _LinkTile(
-        prefix: 'Forked from',
-        title: 'FlClash',
-        icon: Icons.code,
-        onTap: () =>
-            globalState.openUrl('https://github.com/chen08209/FlClash'),
+        prefix: 'License',
+        title: 'GPL-3.0',
+        icon: Icons.gavel,
+        onTap: () => globalState
+            .openUrl('https://www.gnu.org/licenses/gpl-3.0.html'),
       ),
       _LinkTile(
         prefix: 'Powered by',

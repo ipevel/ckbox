@@ -291,8 +291,8 @@ if (typeof serviceConfigs !== 'undefined' && Array.isArray(serviceConfigs)) {
   }
 }
 var __groups = [];
-if (typeof Compatible_With_Bettbox !== 'undefined' && Compatible_With_Bettbox && Array.isArray(Compatible_With_Bettbox.policyGroupOptions)) {
-  var __declared = Compatible_With_Bettbox.policyGroupOptions;
+if (typeof Compatible_With_Ckbox !== 'undefined' && Compatible_With_Ckbox && Array.isArray(Compatible_With_Ckbox.policyGroupOptions)) {
+  var __declared = Compatible_With_Ckbox.policyGroupOptions;
   for (var __j = 0; __j < __declared.length; __j++) {
     if (typeof __declared[__j] === 'string') {
       __groups.push(__declared[__j]);
