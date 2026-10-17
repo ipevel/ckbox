@@ -10,7 +10,7 @@ const serviceConfigs = [
   { key: 'ads', name: 'Ads', rules: ['DOMAIN-KEYWORD,adservice,REJECT'] },
 ];
 
-const Compatible_With_Bettbox = {
+const Compatible_With_Ckbox = {
   policyGroupOptions: ['AI', 'Streaming', 42],
 };
 

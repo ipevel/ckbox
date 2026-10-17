@@ -88,7 +88,7 @@ var
 begin
   PowerShellScript := 
     '$ErrorActionPreference = ''SilentlyContinue'';' + #13#10 +
-    'Write-Host "Cleaning old Wintun/Ckbox/LiClash network adapters...";' + #13#10 +
+    'Write-Host "Cleaning old Wintun/Ckbox network adapters...";' + #13#10 +
     '$adapters = Get-NetAdapter | Where-Object {' + #13#10 +
     '$_.InterfaceDescription -like "*Ckbox*" -or' + #13#10 +
     '  $_.Name -like "*Ckbox*"' + #13#10 +
