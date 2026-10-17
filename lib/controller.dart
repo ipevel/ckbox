@@ -1874,7 +1874,7 @@ class AppController {
     );
 
     return Isolate.run<List<int>>(() async {
-      // Use ZipFileEncoder like FLClash - more reliable than ZipEncoder + Archive
+      // Use ZipFileEncoder - more reliable than ZipEncoder + Archive
       final tempDir = Directory.systemTemp;
       final tempZipPath = join(
         tempDir.path,
