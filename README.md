@@ -27,7 +27,7 @@ Ckbox = **「Bettbox 完整架构的照搬 + 面板账号体系的唯一新增�
 5. ✅ Windows 端组装（runner + Inno Setup + 打包）
 6. ✅ Android 端组装（Kotlin + JNI + Manifest，包名 com.ckbox.app）
 7. ⬜ 签名接入（SignPath 申请 + keystore 生成，占位已就绪，需用户）
-8. ✅ 产品增量：面板账号体系（模型 + 客户端 + 存储 + 登录 UI）
+8. ✅ 产品增量：面板账号体系（模型 + 客户端 + 存储 + 登录 UI + 管理 UI + 测试）
 
 > 口径：26 条缺陷按用户「取舍照搬不修」全部照原样保留，仅做标识替换（bettbox→ckbox）。
 
