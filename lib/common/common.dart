@@ -45,3 +45,5 @@ export 'ui_manager.dart';
 export 'utils.dart';
 export 'window.dart';
 export 'media_unlock_checker.dart';
+export 'panel_client.dart';
+export 'panel_account_store.dart';
