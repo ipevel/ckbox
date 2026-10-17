@@ -8,6 +8,7 @@ import 'package:ckbox/providers/providers.dart';
 import 'package:ckbox/state.dart';
 import 'package:ckbox/views/profiles/edit_profile.dart';
 import 'package:ckbox/views/profiles/override_profile.dart';
+import 'package:ckbox/views/profiles/panel_accounts_view.dart';
 import 'package:ckbox/views/profiles/scripts.dart';
 import 'package:ckbox/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
@@ -112,6 +113,22 @@ class _ProfilesViewState extends ConsumerState<ProfilesView> {
         tooltip: appLocalizations.sort,
         icon: const Icon(Icons.sort),
         iconSize: 26,
+      ),
+      IconButton(
+        onPressed: () {
+          showExtend(
+            context,
+            builder: (_, type) {
+              return AdaptiveSheetScaffold(
+                type: type,
+                title: '面板账号',
+                body: const PanelAccountsView(),
+              );
+            },
+          );
+        },
+        tooltip: '面板账号',
+        icon: const Icon(Icons.cloud_outlined),
       ),
     ];
   }
