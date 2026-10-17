@@ -39,7 +39,7 @@ class AboutView extends StatelessWidget {
         title: 'Github Releases',
         icon: Icons.star,
         onTap: () =>
-            globalState.openUrl('https://github.com/ipevel/Ckbox'),
+            globalState.openUrl('https://github.com/ipevel/ckbox'),
       ),
       _LinkTile(
         title: appLocalizations.checkUpdate,
