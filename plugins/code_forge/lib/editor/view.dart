@@ -21,7 +21,7 @@ part 'paint.dart';
 const int kExactWrappedHeightThreshold = 512;
 const int kWrappedHeightSampleSize = 64;
 
-/// FlClash's code editor, with syntax highlighting, code folding, a line
+/// Ckbox's code editor, with syntax highlighting, code folding, a line
 /// number gutter, auto-indentation, bracket pairing, undo/redo, word
 /// completion and search.
 class CodeForge extends StatefulWidget {
