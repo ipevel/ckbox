@@ -1,0 +1,14 @@
+script_template: inno_setup.iss
+app_id: 728B3532-C74B-4870-9068-BE70FE1LITES
+app_name: Ckbox
+publisher: ckbox.cc
+publisher_url: https://github.com/ckboxcc/Ckbox
+display_name: Ckbox
+executable_name: Ckbox.exe
+output_base_file_name: Ckbox.exe
+setup_icon_file: ..\windows\runner\resources\app_icon.ico
+locales:
+  - lang: zh
+    file: ..\windows\packaging\exe\ChineseSimplified.isl
+  - lang: en
+privileges_required: admin
