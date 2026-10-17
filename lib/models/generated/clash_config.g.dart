@@ -401,13 +401,13 @@ Map<String, dynamic> _$ExperimentalToJson(_Experimental instance) =>
 _GeoXUrl _$GeoXUrlFromJson(Map<String, dynamic> json) => _GeoXUrl(
   mmdb:
       json['mmdb'] as String? ??
-      'https://github.com/ipevel/clash-rulesets/releases/download/latest/geoip.metadb',
+      'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geoip.metadb',
   asn:
       json['asn'] as String? ??
-      'https://github.com/ipevel/clash-rulesets/releases/download/latest/GeoLite2-ASN.mmdb',
+      'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/ASN.mmdb',
   geosite:
       json['geosite'] as String? ??
-      'https://github.com/ipevel/clash-rulesets/releases/download/latest/geosite.dat',
+      'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geosite.dat',
 );
 
 Map<String, dynamic> _$GeoXUrlToJson(_GeoXUrl instance) => <String, dynamic>{
