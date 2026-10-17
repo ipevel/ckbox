@@ -58,6 +58,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# 签名密钥：绝不入库（CI 从 secrets 注入 base64 的 keystore）
+*.jks
+*.keystore
+*.p12
+*.p12.old
+/android/app/keystore.jks
+/android/local.properties
+
 /android/core/.cxx
 
 #libclash

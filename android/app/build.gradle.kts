@@ -40,6 +40,10 @@ android {
                 storePassword = mStorePassword
                 keyAlias = mKeyAlias
                 keyPassword = mKeyPassword
+                // 修 A4：显式启用 v2 + v3 签名，保留 lineage 为未来密钥轮换留证据链
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
@@ -52,7 +56,9 @@ android {
         release {
             isMinifyEnabled = true
             isDebuggable = false
-            signingConfig = signingConfigs.getByName(if (isRelease) "release" else "debug")
+            // 修 A6：无 keystore 时 signingConfigs 里不存在 "release"，
+            // 此处直接抛错令 release 构建失败，禁止静默回落 debug 产出「伪 release」包。
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
