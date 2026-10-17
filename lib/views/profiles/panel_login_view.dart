@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../common/common.dart';
 import '../../models/models.dart';
-import '../../state.dart';
 
 /// 面板登录视图（ckbox 面板账号体系 UI 入口）。
 ///
