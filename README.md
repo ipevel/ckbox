@@ -16,18 +16,20 @@ Ckbox = **「Bettbox 完整架构的照搬 + 面板账号体系的唯一新增�
 
 ## 项目状态
 
-**当前：规划 / 建仓阶段。**
+**当前：代码迁移完成 + 面板账号体系核心已实现。** 待编译验证与签名申请。
 
-实施按 `ckbox-spec/ckbox-实施规格.md` 的执行顺序推进：
+按 `ckbox-spec/ckbox-实施规格.md` 的执行顺序：
 
-1. ✅ 建仓 + 许可 + CI 骨架
-2. ⬜ 内核先行（core/ + Clash.Meta 迁移）
-3. ⬜ Dart 层搬迁（lib/ + 标识替换）
-4. ⬜ Rust 特权服务重写
-5. ⬜ Windows 端组装
-6. ⬜ Android 端组装
-7. ⬜ 签名接入
-8. ⬜ 产品增量（面板/订阅/自更新）
+1. ✅ 建仓 + 许可（GPL-3.0）+ CI 骨架 + 签名流水线占位
+2. ✅ 内核先行（core/ + Clash.Meta 迁移，纳入版本控制）
+3. ✅ Dart 层搬迁（lib 127,936 行 + plugins 27,659 行，标识替换）
+4. ✅ Rust 特权服务（按「取舍照搬不修」口径，含 D2-D6 缺陷照搬）
+5. ✅ Windows 端组装（runner + Inno Setup + 打包）
+6. ✅ Android 端组装（Kotlin + JNI + Manifest，包名 com.ckbox.app）
+7. ⬜ 签名接入（SignPath 申请 + keystore 生成，占位已就绪，需用户）
+8. ✅ 产品增量：面板账号体系（模型 + 客户端 + 存储 + 登录 UI）
+
+> 口径：26 条缺陷按用户「取舍照搬不修」全部照原样保留，仅做标识替换（bettbox→ckbox）。
 
 ## 规格文档
 
