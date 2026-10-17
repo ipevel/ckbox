@@ -1,0 +1,230 @@
+name: build
+
+# ckbox CI 骨架（步骤 1：建仓 + 许可 + 签名流水线占位）
+# 目标：Android + Windows 双端。后续步骤逐平台填充真实构建命令。
+# 参考源：bettbox .github/workflows/build.yaml（保留签名链结构，标识替换为 Ckbox）
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  IS_STABLE: ${{ !contains(github.ref, '-') }}
+  IS_PRERELEASE: ${{ contains(github.ref_name, 'pre') }}
+  SHOULD_RELEASE: ${{ !contains(github.ref, '-') || contains(github.ref_name, 'pre') }}
+  GRADLE_OPTS: -Dorg.gradle.vfs.watch=false
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  SENTRY_BACKEND: none
+  # 签名流水线占位（步骤 7 接入）：SignPath token 与 Android keystore 从 secrets 注入
+  SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+  IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN || vars.IPINFO_TOKEN }}
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      actions: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ckbox 双端：Android 4 ABI + Windows amd64/arm64(+compatible)
+          - platform: android
+            os: ubuntu-24.04
+            arch: arm64
+          - platform: android
+            os: ubuntu-24.04
+            arch: amd64
+          - platform: android
+            os: ubuntu-24.04
+            arch: arm
+          - platform: android
+            os: ubuntu-24.04
+            arch: universal
+          - platform: windows
+            os: windows-2022
+            arch: amd64
+          - platform: windows
+            os: windows-11-arm
+            arch: arm64
+          - platform: windows
+            os: windows-2022
+            arch: amd64
+            compatible: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      # --- Rust 工具链（按平台） ---
+      - name: Setup Rust (Windows)
+        if: matrix.platform == 'windows'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch == 'arm64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
+
+      - name: Setup Rust (Android)
+        if: matrix.platform == 'android'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
+      - name: Enable Git long paths (Windows)
+        if: matrix.platform == 'windows'
+        run: git config --global core.longpaths true
+
+      # --- Android 签名（步骤 7 接入 keystore，当前占位） ---
+      - name: Setup Keystore (Android)
+        if: matrix.platform == 'android'
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 --decode > android/app/keystore.jks
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/local.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/local.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/local.properties
+
+      - name: Setup Java (Android)
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Android NDK
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          NDK_VERSION="28.2.13676358"
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" >/dev/null 2>&1 || true
+          echo "ANDROID_NDK=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Configure Cargo for Android
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          mkdir -p ~/.cargo
+          cat > ~/.cargo/config.toml <<EOF
+          [target.aarch64-linux-android]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang"
+          [target.armv7-linux-androideabi]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi26-clang"
+          [target.x86_64-linux-android]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android26-clang"
+          [target.i686-linux-android]
+          linker = "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android26-clang"
+          EOF
+
+      - name: Setup Golang
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.compatible == true && '1.24.x' || '1.26.x' }}
+          cache-dependency-path: core/go.sum
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ contains(matrix.os, 'arm') && 'master' || 'stable' }}
+          cache: true
+          cache-key: flutter-${{ matrix.platform }}-${{ matrix.arch }}-${{ hashFiles('**/pubspec.lock') }}
+          flutter-version: ${{ contains(matrix.os, 'arm') && '' || '3.47.7' }}
+
+      - name: Clear Pub Cache Credentials
+        shell: bash
+        run: rm -f ~/.pub-cache/credentials.json 2>/dev/null || true
+
+      - name: Clean Gradle (Android)
+        if: matrix.platform == 'android'
+        run: |
+          cd android
+          flutter clean
+
+      # --- TODO(步骤 2/3/4/5/6)：真实构建步骤（内核迁移、Dart 层、Rust 服务、双端组装）完成后填充 ---
+      # - 内核先行：core/ + Clash.Meta 迁移 + go build
+      # - Dart 层：flutter pub get + build_runner + setup.dart
+      # - Rust 服务：cargo build --release
+      # - 双端组装：flutter build windows / apk
+
+      # --- Windows 签名链（步骤 7 接入，当前保留 SignPath 结构占位） ---
+      - name: Install SignPath (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+        run: |
+          if (-not $env:SIGNPATH_API_TOKEN) {
+            Write-Host "SIGNPATH_API_TOKEN is not configured. Skipping module installation."
+            exit 0
+          }
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+          Install-Module -Name SignPath -Force -Scope CurrentUser -Repository PSGallery
+
+      - name: Set Signing Policy Slug (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $isStable = '${{ env.IS_STABLE }}' -eq 'true'
+          $isPre = '${{ env.IS_PRERELEASE }}' -eq 'true'
+          if ($isStable) {
+            $exePolicy = "release-signing"
+            $installerPolicy = "release-signing"
+          } elseif ($isPre) {
+            $exePolicy = "test-signing"
+            $installerPolicy = "release-signing"
+          } else {
+            $exePolicy = "test-signing"
+            $installerPolicy = "test-signing"
+          }
+          "EXE_SIGNING_POLICY_SLUG=$exePolicy" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "INSTALLER_SIGNING_POLICY_SLUG=$installerPolicy" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      # TODO(步骤 7)：SignPath submit-signing-request 三个对象（core / helper / exe / installer）
+      # organization-id 与 project-slug 待 ckbox 申请 SignPath 项目后填入，替换 bettbox 的
+      # '0d3f8e8e-3f4d-4ac8-ab3f-d6c5c110ab0d' / 'Bettbox'
+
+  upload:
+    permissions: write-all
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download
+        uses: actions/download-artifact@v8
+        with:
+          path: ./dist/
+          pattern: Ckbox-*
+          merge-multiple: true
+          skip-decompress: true
+
+      # TODO(步骤 5/6)：双端组装完成后，确定 release 产物命名与 release.md 生成
+
+      - name: Generate release.md
+        run: |
+          printf '%s\n' "- Fixes and improvements" "- Recommended version update" > release.md
+
+      - name: Patch release.md
+        run: |
+          version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          base_version=$(echo "$version" | sed 's/-pre[0-9]*//')
+          if [ "${{ env.IS_PRERELEASE }}" == "true" ]; then
+            sed -e "s|BASE_VERSION|$base_version|g" -e "s|VERSION|$version|g" ./.github/release_template_pre.md >> release.md
+          else
+            sed -e "s|BASE_VERSION|$base_version|g" -e "s|VERSION|$version|g" ./.github/release_template.md >> release.md
+          fi
+
+      - name: Release
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
+        uses: softprops/action-gh-release@v3.0.0
+        with:
+          files: ./dist/*
+          body_path: './release.md'
+          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
