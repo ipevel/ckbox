@@ -213,14 +213,13 @@ jobs:
         run: |
           dart windows/packaging/exe/package_windows.dart --arch ${{ matrix.arch }} ${{ matrix.compatible == true && '--compatible' || '' }} --env ${{ env.IS_STABLE == 'true' && 'stable' || 'pre' }}
 
-      # --- 上传产物（archive: false 对齐上游：Release 资产直接用真实文件名） ---
+      # --- 上传产物（默认 zip；upload job 下载后解压得到真实文件名） ---
       - name: Upload Artifacts (Android)
         if: matrix.platform == 'android'
         uses: actions/upload-artifact@v5
         with:
           name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}
           path: ./dist/*
-          archive: false
           overwrite: true
           if-no-files-found: warn
 
@@ -230,7 +229,6 @@ jobs:
         with:
           name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.compatible == true && '-compatible' || '' }}-installer
           path: ./dist/*.exe
-          archive: false
           overwrite: true
           if-no-files-found: warn
 
@@ -240,7 +238,6 @@ jobs:
         with:
           name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}-compatible-portable
           path: ./dist/*.zip
-          archive: false
           overwrite: true
           if-no-files-found: warn
 
@@ -298,7 +295,6 @@ jobs:
           path: ./dist/
           pattern: Ckbox-*
           merge-multiple: true
-          skip-decompress: true
 
       # TODO：确定 release 产物命名与 release.md 生成
 
