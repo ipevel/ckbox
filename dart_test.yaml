@@ -1,3 +1,4 @@
-# platform：需要本地平台环境（原生库 / 平台插件 / 平台渲染），CI 上以 --exclude-tags=platform 跳过
+# platform：需要本地平台环境（原生库 / 平台插件 / 平台渲染）
+# CI 上以 flutter test --exclude-tags=platform 跳过，见 .github/workflows/pr.yaml
 tags:
   platform:
