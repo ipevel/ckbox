@@ -83,7 +83,7 @@ class _UaItemState extends ConsumerState<UaItem> {
               child: InputDialog(
                 title: appLocalizations.custom,
                 value: _lastCustomUa,
-                hintText: 'Clash.Meta',
+                hintText: 'ckbox/0.1.0',
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return appLocalizations.emptyTip('UA');

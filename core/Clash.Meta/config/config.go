@@ -500,7 +500,7 @@ func DefaultRawConfig() *RawConfig {
 		ProxyGroup:        []map[string]any{},
 		TCPConcurrent:     false,
 		FindProcessMode:   process.FindProcessStrict,
-		GlobalUA:          "ckbox/ClashMetaForAndroid/0.1.0",
+		GlobalUA:          "ckbox/0.1.0",
 		ETagSupport:       true,
 		DNS: RawDNS{
 			Enable:         false,
