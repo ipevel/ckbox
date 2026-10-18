@@ -345,7 +345,6 @@
   "proxyGroup": "Группа прокси",
   "go": "Перейти",
   "externalLink": "Внешняя ссылка",
-  "otherContributors": "Другие участники (в случайном порядке)",
   "autoCloseConnections": "Автозакрытие соединений",
   "autoCloseConnectionsDesc": "Закрывать соединения при смене узла",
   "relatedSettings": "Связанные настройки",

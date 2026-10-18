@@ -917,9 +917,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Organization / Domain",
     ),
     "other": MessageLookupByLibrary.simpleMessage("Other"),
-    "otherContributors": MessageLookupByLibrary.simpleMessage(
-      "Other Contributors (Random Order)",
-    ),
     "otherSettings": MessageLookupByLibrary.simpleMessage("Enhanced Tools"),
     "otherSettingsDesc": MessageLookupByLibrary.simpleMessage(
       "Modify enhanced tool settings",

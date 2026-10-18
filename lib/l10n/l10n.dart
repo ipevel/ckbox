@@ -2815,16 +2815,6 @@ class AppLocalizations {
     );
   }
 
-  /// `Other Contributors (Random Order)`
-  String get otherContributors {
-    return Intl.message(
-      'Other Contributors (Random Order)',
-      name: 'otherContributors',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Auto-Close Connections`
   String get autoCloseConnections {
     return Intl.message(
