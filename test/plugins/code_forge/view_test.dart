@@ -1,3 +1,6 @@
+@Tags(['platform'])
+library;
+
 import 'dart:ui' as ui;
 
 import 'package:code_forge/code_forge.dart';
