@@ -946,9 +946,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Организация / Домен",
     ),
     "other": MessageLookupByLibrary.simpleMessage("Другое"),
-    "otherContributors": MessageLookupByLibrary.simpleMessage(
-      "Другие участники (в случайном порядке)",
-    ),
     "otherSettings": MessageLookupByLibrary.simpleMessage(
       "Расширенные инструменты",
     ),
