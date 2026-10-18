@@ -1,0 +1,45 @@
+name: pr
+
+# PR 门禁：静态分析 + 单元测试（轻量，不构建产物）
+# 发版级全矩阵构建仍由 build.yaml 在 tag push 时执行
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.7'
+          cache: true
+          cache-key: flutter-pr-${{ hashFiles('**/pubspec.lock') }}
+
+      - name: Clear Pub Cache Credentials
+        shell: bash
+        run: rm -f ~/.pub-cache/credentials.json 2>/dev/null || true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
