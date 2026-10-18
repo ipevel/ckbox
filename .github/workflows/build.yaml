@@ -296,21 +296,16 @@ jobs:
           pattern: Ckbox-*
           merge-multiple: true
 
-      # TODO：确定 release 产物命名与 release.md 生成
-
       - name: Generate release.md
-        run: |
-          printf '%s\n' "- Fixes and improvements" "- Recommended version update" > release.md
-
-      - name: Patch release.md
         run: |
           version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
           base_version=$(echo "$version" | sed 's/-pre[0-9]*//')
           if [ "${{ env.IS_PRERELEASE }}" == "true" ]; then
-            sed -e "s|BASE_VERSION|$base_version|g" -e "s|VERSION|$version|g" ./.github/release_template_pre.md >> release.md
+            template=./.github/release_template_pre.md
           else
-            sed -e "s|BASE_VERSION|$base_version|g" -e "s|VERSION|$version|g" ./.github/release_template.md >> release.md
+            template=./.github/release_template.md
           fi
+          sed -e "s|BASE_VERSION|$base_version|g" -e "s|VERSION|$version|g" "$template" > release.md
 
       - name: Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
