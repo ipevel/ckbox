@@ -2,3 +2,4 @@
 # CI 上以 flutter test --exclude-tags=platform 跳过，见 .github/workflows/pr.yaml
 tags:
   platform:
+# 门禁验证临时改动
