@@ -1,0 +1,56 @@
+name: build-windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Enable Git long paths
+        run: git config --global core.longpaths true
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Setup Golang
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: core/go.sum
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.7'
+          cache: true
+
+      - name: Clear pub cache credentials
+        shell: bash
+        run: rm -f ~/.pub-cache/credentials.json 2>/dev/null || true
+
+      - name: Build Windows
+        shell: bash
+        run: |
+          dart pub get
+          dart setup.dart windows --arch amd64 --env stable
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ckbox-windows-amd64
+          path: |
+            build/windows/x64/runner/Release/*.exe
+            build/windows/x64/runner/Release/*.dll
+            dist/**
+          if-no-files-found: warn
