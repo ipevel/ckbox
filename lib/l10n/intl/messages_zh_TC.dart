@@ -677,7 +677,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "options": MessageLookupByLibrary.simpleMessage("選項"),
     "organizationDomain": MessageLookupByLibrary.simpleMessage("組織 / 域名"),
     "other": MessageLookupByLibrary.simpleMessage("其他"),
-    "otherContributors": MessageLookupByLibrary.simpleMessage("其他貢獻者(隨機排序)"),
     "otherSettings": MessageLookupByLibrary.simpleMessage("增強工具"),
     "otherSettingsDesc": MessageLookupByLibrary.simpleMessage("修改增強工具設定"),
     "outboundMode": MessageLookupByLibrary.simpleMessage("出站模式"),

@@ -931,9 +931,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "سازمان / دامنه",
     ),
     "other": MessageLookupByLibrary.simpleMessage("سایر"),
-    "otherContributors": MessageLookupByLibrary.simpleMessage(
-      "مشارکت‌کنندگان دیگر (ترتیب تصادفی)",
-    ),
     "otherSettings": MessageLookupByLibrary.simpleMessage("ابزارهای پیشرفته"),
     "otherSettingsDesc": MessageLookupByLibrary.simpleMessage(
       "تغییر تنظیمات ابزارهای پیشرفته",

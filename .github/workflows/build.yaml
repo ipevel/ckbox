@@ -143,7 +143,7 @@ jobs:
           cd android
           flutter clean
 
-      # --- 构建步骤：对齐上游 Bettbox v1.19.6 流程 ---
+      # --- 构建步骤 ---
       - name: Patch for Windows
         if: matrix.platform == 'windows'
         shell: bash
