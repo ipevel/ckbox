@@ -33,9 +33,13 @@ Ckbox 关注隐私、安全与使用细节，提供稳定流畅的 TUN/VPN 体�
 
 Windows 端由四个进程组成：用户态 UI、内核进程、SYSTEM 提权服务、UWP 回环豁免工具；内核与 UI 通过 `external-controller` 通信，UI 与提权服务通过命名管道通信。
 
-## 开源组件
+## 致谢
+
+Ckbox 站在开源社区的肩膀上。
 
 - **[Mihomo / Clash.Meta](https://github.com/MetaCubeX/mihomo)** — 内核
+- **[FlClash](https://github.com/chen08209/FlClash)** — 界面血统
+- **[Bettbox](https://github.com/appshubcc/Bettbox)** — 本项目在其基础上重构演进，感谢原作者的开源工作
 
 本项目遵循 GPL-3.0 发布。
 
