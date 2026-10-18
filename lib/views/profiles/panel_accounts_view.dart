@@ -1,7 +1,10 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:ckbox/state.dart';
+import 'package:ckbox/widgets/widgets.dart';
 
 import '../../common/common.dart';
 import '../../models/models.dart';
+import 'panel_login_view.dart';
 
 /// 面板账号管理视图（ckbox 面板账号体系）。
 ///
@@ -88,30 +91,66 @@ class _PanelAccountsViewState extends State<PanelAccountsView> {
     if (mounted) context.showSnackBar('已删除账号');
   }
 
+  Future<void> _addPanel() async {
+    showExtend(
+      context,
+      builder: (_, type) {
+        return AdaptiveSheetScaffold(
+          type: type,
+          title: '面板登录',
+          body: PanelLoginView(
+            onLogin: (subscribeUrl) async {
+              await globalState.appController.addProfileFormURL(subscribeUrl);
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_accounts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 48),
-            const SizedBox(height: 12),
-            const Text('还没有面板账号'),
-            const SizedBox(height: 4),
-            const Text(
-              '在「添加配置」里选「面板登录」',
-              style: TextStyle(fontSize: 12),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _addPanel,
+              icon: const Icon(Icons.add),
+              label: const Text('添加面板'),
             ),
-          ],
+          ),
         ),
-      );
-    }
+        Expanded(
+          child: _accounts.isEmpty ? _buildEmpty() : _buildList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.cloud_off_outlined, size: 48),
+          const SizedBox(height: 12),
+          const Text('还没有面板账号'),
+          const SizedBox(height: 4),
+          const Text('点上方「添加面板」登录', style: TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       itemCount: _accounts.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {

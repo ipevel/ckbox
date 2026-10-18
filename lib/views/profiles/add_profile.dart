@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'edit_profile.dart';
 import 'panel_login_view.dart';
+import 'panel_accounts_view.dart';
 import 'tv_qr_import_dialog.dart';
 
 class AddProfileView extends StatelessWidget {
@@ -107,6 +108,21 @@ class AddProfileView extends StatelessWidget {
   }
 
   Future<void> _handlePanelLogin() async {
+    final accounts = await PanelAccountStore().load();
+    if (!context.mounted) return;
+    if (accounts.isNotEmpty) {
+      showExtend(
+        context,
+        builder: (_, type) {
+          return AdaptiveSheetScaffold(
+            type: type,
+            title: '面板账号',
+            body: const PanelAccountsView(),
+          );
+        },
+      );
+      return;
+    }
     showExtend(
       context,
       builder: (_, type) {
