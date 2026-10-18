@@ -213,13 +213,15 @@ jobs:
         run: |
           dart windows/packaging/exe/package_windows.dart --arch ${{ matrix.arch }} ${{ matrix.compatible == true && '--compatible' || '' }} --env ${{ env.IS_STABLE == 'true' && 'stable' || 'pre' }}
 
-      # --- 上传产物 ---
+      # --- 上传产物（archive: false 对齐上游：Release 资产直接用真实文件名） ---
       - name: Upload Artifacts (Android)
         if: matrix.platform == 'android'
         uses: actions/upload-artifact@v5
         with:
           name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}
           path: ./dist/*
+          archive: false
+          overwrite: true
           if-no-files-found: warn
 
       - name: Upload Windows Installer Artifact
@@ -228,6 +230,8 @@ jobs:
         with:
           name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.compatible == true && '-compatible' || '' }}-installer
           path: ./dist/*.exe
+          archive: false
+          overwrite: true
           if-no-files-found: warn
 
       - name: Upload Windows Portable Artifact
@@ -236,6 +240,8 @@ jobs:
         with:
           name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}-compatible-portable
           path: ./dist/*.zip
+          archive: false
+          overwrite: true
           if-no-files-found: warn
 
       # --- Windows 签名链：待签名服务接入 ---
