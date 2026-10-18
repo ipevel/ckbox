@@ -500,7 +500,6 @@ func DefaultRawConfig() *RawConfig {
 		ProxyGroup:        []map[string]any{},
 		TCPConcurrent:     false,
 		FindProcessMode:   process.FindProcessStrict,
-		// 同 lib/common/package.dart：必须含 `Clash.Meta`，面板据此返回 YAML 订阅。
 		GlobalUA:          "ckbox/0.1.2 Clash.Meta",
 		ETagSupport:       true,
 		DNS: RawDNS{
