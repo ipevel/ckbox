@@ -143,22 +143,99 @@ jobs:
           cd android
           flutter clean
 
-      # --- 真实构建步骤：setup.dart 编排 core(Go) + helper(Rust) + Flutter 组装 ---
-      - name: Build
+      # --- 构建步骤：对齐上游 Bettbox v1.19.6 流程 ---
+      - name: Patch for Windows
+        if: matrix.platform == 'windows'
         shell: bash
         run: |
-          dart pub get
-          if [ "${{ matrix.compatible }}" = "true" ]; then
-            dart setup.dart ${{ matrix.platform }} --arch ${{ matrix.arch }} --env stable --compatible
-          else
-            dart setup.dart ${{ matrix.platform }} --arch ${{ matrix.arch }} --env stable
-          fi
+          cd core
+          SING_TUN_VERSION=$(grep -E 'github\.com/metacubex/sing-tun\s+v[^[:space:]]+' go.mod | awk '{print $2}')
+          echo "Detected sing-tun version: ${SING_TUN_VERSION}"
+          go mod download github.com/metacubex/sing-tun@${SING_TUN_VERSION}
+          MOD_CACHE=$(go env GOMODCACHE | tr '\\' '/')
+          FILE="${MOD_CACHE}/github.com/metacubex/sing-tun@${SING_TUN_VERSION}/tun_windows.go"
+          echo "Patching ${FILE}"
+          chmod +w "${FILE}"
 
-      - name: Upload build artifact
+      - name: Build Ckbox (Non-Windows)
+        if: matrix.platform != 'windows'
+        shell: bash
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          flutter pub get
+          dart run build_runner build
+          dart setup.dart ${{ matrix.platform }} --arch ${{ matrix.arch }} ${{ env.IS_STABLE == 'true' && '--env stable' || '' }} ${{ matrix.compatible == true && '--compatible' || '' }}
+
+      - name: Build Core (Windows)
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          flutter pub get
+          dart run build_runner build
+          dart setup.dart windows --arch ${{ matrix.arch }} --out core-only ${{ matrix.compatible == true && '--compatible' || '' }}
+
+      - name: Build HelperService (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $coreHash = (Get-FileHash libclash/windows/CkboxCore.exe -Algorithm SHA256).Hash.ToLower()
+          Write-Host "Core SHA256 (TOKEN for Helper): $coreHash"
+          dart setup.dart windows --arch ${{ matrix.arch }} --out helper --core-hash $coreHash ${{ matrix.compatible == true && '--compatible' || '' }}
+
+      - name: Build Ckbox (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          $coreHash = (Get-FileHash libclash/windows/CkboxCore.exe -Algorithm SHA256).Hash.ToLower()
+          Write-Host "Core SHA256: $coreHash"
+          $desc = if ('${{ matrix.compatible }}' -eq 'true') { "${{ matrix.arch }}-compatible" } else { "${{ matrix.arch }}" }
+          $appEnv = if ('${{ env.IS_STABLE }}' -eq 'true') { "stable" } else { "pre" }
+          $flutterArgs = @(
+            "build", "windows", "--release", "--verbose",
+            "--dart-define=CORE_SHA256=$coreHash",
+            "--dart-define=APP_ENV=$appEnv",
+            "--dart-define=APP_ASSET_SUFFIX=windows-$desc-setup.exe"
+          )
+          if ($env:SENTRY_DSN) {
+            $flutterArgs += "--dart-define=SENTRY_DSN=$env:SENTRY_DSN"
+          }
+          if ($env:IPINFO_TOKEN) {
+            $flutterArgs += "--dart-define=IPINFO_TOKEN=$env:IPINFO_TOKEN"
+          }
+          flutter @flutterArgs
+
+      - name: Package Windows Application
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          dart windows/packaging/exe/package_windows.dart --arch ${{ matrix.arch }} ${{ matrix.compatible == true && '--compatible' || '' }} --env ${{ env.IS_STABLE == 'true' && 'stable' || 'pre' }}
+
+      # --- 上传产物 ---
+      - name: Upload Artifacts (Android)
+        if: matrix.platform == 'android'
         uses: actions/upload-artifact@v5
         with:
-          name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.compatible == true && '-compatible' || '' }}
-          path: dist/**
+          name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}
+          path: ./dist/*
+          if-no-files-found: warn
+
+      - name: Upload Windows Installer Artifact
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.compatible == true && '-compatible' || '' }}-installer
+          path: ./dist/*.exe
+          if-no-files-found: warn
+
+      - name: Upload Windows Portable Artifact
+        if: matrix.platform == 'windows' && matrix.compatible == true && matrix.arch == 'amd64'
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}-compatible-portable
+          path: ./dist/*.zip
           if-no-files-found: warn
 
       # --- Windows 签名链：待签名服务接入 ---
