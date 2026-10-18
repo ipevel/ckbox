@@ -1,5 +1,3 @@
-# Release Notes (Pre-release)
-
 ## 下载 / Downloads
 
 | 系统 | 版本要求 | 直链下载 |
