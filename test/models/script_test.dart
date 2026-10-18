@@ -1,3 +1,6 @@
+@Tags(['platform'])
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -46,7 +49,7 @@ void main() {
     expect(props.scripts[1].digest, large.toMd5());
     expect(await props.scripts[1].readContent(), large);
     expect(await props.externalize(), same(props));
-  }, tags: 'platform');
+  });
 
   test('saved content is read back and tracked by digest', () async {
     final draft = Script.create(label: 'C');
