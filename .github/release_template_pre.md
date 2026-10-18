@@ -1,10 +1,12 @@
 # Release Notes (Pre-release)
 
-- 待填充：VERSION（base：BASE_VERSION）
-
 ## 下载 / Downloads
 
-| 平台 | Requirements | Direct Links |
-|---|---|---|
-| **Android** | Android 8.0+ | `Ckbox-VERSION-android-arm64-v8a.apk` · `Ckbox-VERSION-android-armeabi-v7a.apk` · `Ckbox-VERSION-android-x86_64.apk` · `Ckbox-VERSION-android-universal.apk` |
-| **Windows** | Windows 8.1+ | `Ckbox-VERSION-windows-amd64-setup.exe` · `Ckbox-VERSION-windows-amd64-compatible-setup.exe` · `Ckbox-VERSION-windows-arm64-setup.exe` |
+| 系统 | 版本要求 | 直链下载 |
+|:---:|:---|:---|
+| **Android** | Android 8.0+ | <a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-android-arm64-v8a.apk"><img src="https://img.shields.io/badge/APK-ARMv8-3DDC84?logo=android&logoColor=white&style=flat-square&labelColor=222222" alt="APK ARMv8"></a> <a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-android-armeabi-v7a.apk"><img src="https://img.shields.io/badge/APK-ARMv7-3DDC84?logo=android&logoColor=white&style=flat-square&labelColor=222222" alt="APK ARMv7"></a><br><a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-android-x86_64.apk"><img src="https://img.shields.io/badge/APK-x64-3DDC84?logo=android&logoColor=white&style=flat-square&labelColor=222222" alt="APK x64"></a> <a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-android-universal.apk"><img src="https://img.shields.io/badge/APK-Universal-3DDC84?logo=android&logoColor=white&style=flat-square&labelColor=222222" alt="APK Universal"></a> |
+| **Windows** | Windows 8.1+ | <a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-windows-amd64-setup.exe"><img src="https://img.shields.io/badge/EXE-x64-0078D4?logo=windows&logoColor=white&style=flat-square&labelColor=222222" alt="EXE x64"></a> <a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-windows-amd64-compatible-setup.exe"><img src="https://img.shields.io/badge/EXE-x64_Compatible-0078D4?logo=windows&logoColor=white&style=flat-square&labelColor=222222" alt="EXE x64 Compatible"></a><br><a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-windows-arm64-setup.exe"><img src="https://img.shields.io/badge/EXE-ARM64-0078D4?logo=windows&logoColor=white&style=flat-square&labelColor=222222" alt="EXE ARM64"></a> <a href="https://github.com/ipevel/ckbox/releases/download/vVERSION/Ckbox-VERSION-windows-amd64-compatible-portable.zip"><img src="https://img.shields.io/badge/ZIP-x64_Portable-6E7681?logo=windows&logoColor=white&style=flat-square&labelColor=222222" alt="ZIP x64 Portable"></a> |
+
+**常用平台：Android arm64-v8a、Windows amd64。** 桌面端 2012 年及更早的 CPU 请选 Compatible 兼容版。
+
+> Windows 产物未做代码签名，首次运行可能被 SmartScreen 拦截，点「仍要运行」即可。
