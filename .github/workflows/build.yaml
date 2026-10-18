@@ -7,6 +7,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
   IS_STABLE: ${{ !contains(github.ref, '-') }}
@@ -142,11 +143,23 @@ jobs:
           cd android
           flutter clean
 
-      # --- TODO：真实构建步骤 ---
-      # - 内核先行：core/ + Clash.Meta 迁移 + go build
-      # - Dart 层：flutter pub get + build_runner + setup.dart
-      # - Rust 服务：cargo build --release
-      # - 双端组装：flutter build windows / apk
+      # --- 真实构建步骤：setup.dart 编排 core(Go) + helper(Rust) + Flutter 组装 ---
+      - name: Build
+        shell: bash
+        run: |
+          dart pub get
+          if [ "${{ matrix.compatible }}" = "true" ]; then
+            dart setup.dart ${{ matrix.platform }} --arch ${{ matrix.arch }} --env stable --compatible
+          else
+            dart setup.dart ${{ matrix.platform }} --arch ${{ matrix.arch }} --env stable
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: Ckbox-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.compatible == true && '-compatible' || '' }}
+          path: dist/**
+          if-no-files-found: warn
 
       # --- Windows 签名链：待签名服务接入 ---
       - name: Install SignPath (Windows)
@@ -186,6 +199,7 @@ jobs:
       # organization-id 与 project-slug 待 ckbox 签名项目申请通过后填入
 
   upload:
+    if: github.event_name == 'push'
     permissions: write-all
     needs: [ build ]
     runs-on: ubuntu-latest
