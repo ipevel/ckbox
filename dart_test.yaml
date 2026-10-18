@@ -1,0 +1,3 @@
+# platform：需要本地平台环境（原生库 / 平台插件 / 平台渲染），CI 上以 --exclude-tags=platform 跳过
+tags:
+  platform:

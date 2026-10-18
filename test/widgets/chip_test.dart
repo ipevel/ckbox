@@ -189,6 +189,9 @@ void main() {
               expect(different, lessThan(2000));
             });
           },
+          tags: density == VisualDensity.standard && scale > 1.0
+              ? ['platform']
+              : null,
         );
       }
     }

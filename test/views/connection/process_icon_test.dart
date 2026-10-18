@@ -1,3 +1,6 @@
+@Tags(['platform'])
+library;
+
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/enum/enum.dart';
 import 'package:ckbox/l10n/l10n.dart';

@@ -1,3 +1,6 @@
+@Tags(['platform'])
+library;
+
 import 'package:ckbox/widgets/code_editor.dart';
 import 'package:code_forge/code_forge.dart';
 import 'package:material_ui/material_ui.dart';

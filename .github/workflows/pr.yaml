@@ -42,4 +42,5 @@ jobs:
         run: flutter analyze
 
       - name: Test
-        run: flutter test
+        # platform 标签：需要原生库（code_forge）或真实平台插件/渲染的用例，CI 上跑不了
+        run: flutter test --exclude-tags=platform

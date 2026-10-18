@@ -1,3 +1,6 @@
+@Tags(['platform'])
+library;
+
 import 'dart:async';
 
 import 'package:code_forge/code_forge.dart';

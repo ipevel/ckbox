@@ -1,3 +1,6 @@
+@Tags(['platform'])
+library;
+
 import 'dart:typed_data';
 
 import 'package:code_forge/code_forge.dart';
