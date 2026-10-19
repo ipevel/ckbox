@@ -196,8 +196,7 @@ class ClashService extends ClashHandlerInterface {
           arg: arg,
           homeDir: homeDirPath,
         );
-        if (started) {
-          await _waitForCoreReady();
+        if (started && await _waitForCoreReady()) {
           isStarting = false;
           if (system.isWindows &&
               globalState.config.appSetting.enableHighPriority) {
@@ -216,7 +215,9 @@ class ClashService extends ClashHandlerInterface {
           return;
         }
         commonPrint.warn(
-          'Helper start core failed, falling back to normal mode',
+          started
+              ? 'Helper-started core did not connect, falling back to normal mode'
+              : 'Helper start core failed, falling back to normal mode',
         );
       }
     }
@@ -243,6 +244,15 @@ class ClashService extends ClashHandlerInterface {
       await _startCoreDirectly(retryArg, environment);
     }
     isStarting = false;
+    if (!socketCompleter.isCompleted) {
+      commonPrint.error('Core failed to start; see the log above for details');
+      globalState.showNotifier(
+        system.isWindows
+            ? 'Core failed to start. Windows Security may have blocked '
+                  'CkboxCore.exe — see the log for details.'
+            : 'Core failed to start — see the log for details.',
+      );
+    }
     if (system.isWindows &&
         !kDebugMode &&
         globalState.config.appSetting.enableHighPriority) {
@@ -307,6 +317,14 @@ class ClashService extends ClashHandlerInterface {
       return true;
     } on TimeoutException {
       commonPrint.error('Core ready timeout after ${timeout.inSeconds}s');
+      if (system.isWindows) {
+        commonPrint.error(
+          'The core did not connect. On Windows this usually means the system '
+          'blocked CkboxCore.exe from starting — check Windows Security '
+          '(App Control / Smart App Control) for a blocked-app notification. '
+          'Release builds are not code signed yet.',
+        );
+      }
       return false;
     }
   }
