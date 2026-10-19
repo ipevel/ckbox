@@ -1,3 +1,4 @@
+import 'package:ckbox/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../common/common.dart';
@@ -12,7 +13,10 @@ class PanelLoginView extends StatefulWidget {
   /// 登录成功回调，参数为订阅 URL。
   final Future<void> Function(String subscribeUrl) onLogin;
 
-  const PanelLoginView({super.key, required this.onLogin});
+  /// 重登录时传入既有账号 id，凭据就地更新而不新建账号。
+  final String? existingId;
+
+  const PanelLoginView({super.key, required this.onLogin, this.existingId});
 
   @override
   State<PanelLoginView> createState() => _PanelLoginViewState();
@@ -35,8 +39,10 @@ class _PanelLoginViewState extends State<PanelLoginView> {
     super.dispose();
   }
 
+  String get _panelUrl => _panelUrlController.text.trim();
+
   Future<void> _login() async {
-    final panelUrl = _panelUrlController.text.trim();
+    final panelUrl = _panelUrl;
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
@@ -70,7 +76,8 @@ class _PanelLoginViewState extends State<PanelLoginView> {
       );
 
       final account = PanelAccount(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.existingId ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         panelUrl: PanelClient.normalizePanelUrl(panelUrl),
         email: email,
         authData: login.authData,
@@ -81,8 +88,14 @@ class _PanelLoginViewState extends State<PanelLoginView> {
         totalTraffic: sub.transferEnable,
         upload: sub.upload,
         download: sub.download,
+        isActive: widget.existingId != null,
+        needsRelogin: false,
       );
       await _store.upsert(account);
+      final accounts = await _store.load();
+      if (!accounts.any((e) => e.isActive)) {
+        await _store.setActive(account.id);
+      }
 
       if (!mounted) return;
       await widget.onLogin(sub.subscribeUrl);
@@ -95,8 +108,193 @@ class _PanelLoginViewState extends State<PanelLoginView> {
     }
   }
 
+  /// 忘记密码：邮箱验证码 + 新密码。
+  void _openResetPassword() {
+    final emailController = TextEditingController();
+    final codeController = TextEditingController();
+    final passwordController = TextEditingController();
+    final panelUrl = _panelUrl;
+
+    showExtend(
+      context,
+      builder: (sheetContext, type) {
+        return AdaptiveSheetScaffold(
+          type: type,
+          title: '重置密码',
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              _buildField(
+                controller: emailController,
+                icon: Icons.email_outlined,
+                label: '注册邮箱',
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildField(
+                      controller: codeController,
+                      icon: Icons.confirmation_number_outlined,
+                      label: '邮箱验证码',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      try {
+                        await _client.sendEmailVerify(
+                          panelUrl: panelUrl,
+                          email: emailController.text.trim(),
+                        );
+                        if (sheetContext.mounted) {
+                          sheetContext.showSnackBar('验证码已发送');
+                        }
+                      } on PanelApiException catch (e) {
+                        if (sheetContext.mounted) {
+                          sheetContext.showSnackBar(e.message);
+                        }
+                      }
+                    },
+                    child: const Text('发送'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: passwordController,
+                icon: Icons.lock_outline,
+                label: '新密码（至少 8 位）',
+                obscure: true,
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () async {
+                  try {
+                    await _client.forgetPassword(
+                      panelUrl: panelUrl,
+                      email: emailController.text.trim(),
+                      emailCode: codeController.text.trim(),
+                      password: passwordController.text,
+                    );
+                    if (sheetContext.mounted) {
+                      sheetContext.showSnackBar('密码已重置，请重新登录');
+                      Navigator.pop(sheetContext);
+                    }
+                  } on PanelApiException catch (e) {
+                    if (sheetContext.mounted) {
+                      sheetContext.showSnackBar(e.message);
+                    }
+                  }
+                },
+                child: const Text('重置密码'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 注册新账号。邀请码与邮箱验证码按面板开关决定是否必填。
+  void _openRegister() {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final inviteController = TextEditingController();
+    final codeController = TextEditingController();
+    final panelUrl = _panelUrl;
+
+    showExtend(
+      context,
+      builder: (sheetContext, type) {
+        return AdaptiveSheetScaffold(
+          type: type,
+          title: '注册面板账号',
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              _buildField(
+                controller: emailController,
+                icon: Icons.email_outlined,
+                label: '邮箱',
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: passwordController,
+                icon: Icons.lock_outline,
+                label: '密码（至少 8 位）',
+                obscure: true,
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: inviteController,
+                icon: Icons.card_giftcard_outlined,
+                label: '邀请码（面板需要时填）',
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildField(
+                      controller: codeController,
+                      icon: Icons.confirmation_number_outlined,
+                      label: '邮箱验证码',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      try {
+                        await _client.sendEmailVerify(
+                          panelUrl: panelUrl,
+                          email: emailController.text.trim(),
+                        );
+                        if (sheetContext.mounted) {
+                          sheetContext.showSnackBar('验证码已发送');
+                        }
+                      } on PanelApiException catch (e) {
+                        if (sheetContext.mounted) {
+                          sheetContext.showSnackBar(e.message);
+                        }
+                      }
+                    },
+                    child: const Text('发送'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () async {
+                  try {
+                    await _client.register(
+                      panelUrl: panelUrl,
+                      email: emailController.text.trim(),
+                      password: passwordController.text,
+                      inviteCode: inviteController.text.trim(),
+                      emailCode: codeController.text.trim(),
+                    );
+                    if (sheetContext.mounted) {
+                      sheetContext.showSnackBar('注册成功，请回到登录页登录');
+                      Navigator.pop(sheetContext);
+                    }
+                  } on PanelApiException catch (e) {
+                    if (sheetContext.mounted) {
+                      sheetContext.showSnackBar(e.message);
+                    }
+                  }
+                },
+                child: const Text('注册'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasPanelUrl = _panelUrl.startsWith('http');
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -142,6 +340,28 @@ class _PanelLoginViewState extends State<PanelLoginView> {
               : const Icon(Icons.login),
           label: Text(_loading ? '登录中…' : '登录并导入订阅'),
         ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: hasPanelUrl ? _openResetPassword : null,
+              child: const Text('忘记密码'),
+            ),
+            TextButton(
+              onPressed: hasPanelUrl ? _openRegister : null,
+              child: const Text('注册账号'),
+            ),
+          ],
+        ),
+        if (!hasPanelUrl)
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              '先填写面板地址才能重置密码或注册',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
       ],
     );
   }

@@ -20,7 +20,7 @@ class PanelAccount {
   /// - v2board：原生 JWT（无前缀）
   final String authData;
 
-  /// 是否 Xboard 鉴权（true=Sancum/Bearer，false=v2board JWT）。
+  /// 是否 Xboard 鉴权（true=Sanctum/Bearer，false=v2board JWT）。
   final bool isXboard;
 
   /// 订阅 token（用户表 token 字段，GUID），用于 URL 订阅。
@@ -41,6 +41,15 @@ class PanelAccount {
   /// 已用下行（字节）。
   final int? download;
 
+  /// 是否为当前活跃账号（多账号切换）。
+  final bool isActive;
+
+  /// 凭据已失效，需要用户重新登录。
+  final bool needsRelogin;
+
+  /// 上次刷新订阅信息的时间（毫秒时间戳，null=从未刷新）。
+  final int? lastRefreshAt;
+
   const PanelAccount({
     required this.id,
     required this.panelUrl,
@@ -53,7 +62,16 @@ class PanelAccount {
     this.totalTraffic,
     this.upload,
     this.download,
+    this.isActive = false,
+    this.needsRelogin = false,
+    this.lastRefreshAt,
   });
+
+  /// 已用总流量（字节）。
+  int get usedTraffic => (upload ?? 0) + (download ?? 0);
+
+  /// 是否长期有效（无到期时间）。
+  bool get isUnlimited => expireAt == null;
 
   Map<String, Object?> toJson() => {
         'id': id,
@@ -67,21 +85,30 @@ class PanelAccount {
         'totalTraffic': totalTraffic,
         'upload': upload,
         'download': download,
+        'isActive': isActive,
+        'needsRelogin': needsRelogin,
+        'lastRefreshAt': lastRefreshAt,
       };
 
   factory PanelAccount.fromJson(Map<String, Object?> json) {
+    int? intOf(Object? value) => value is num
+        ? value.toInt()
+        : (value is String ? int.tryParse(value) : null);
     return PanelAccount(
       id: json['id'] as String? ?? '',
       panelUrl: json['panelUrl'] as String? ?? '',
       email: json['email'] as String? ?? '',
       authData: json['authData'] as String? ?? '',
-      isXboard: json['isXboard'] as bool? ?? false,
+      isXboard: json['isXboard'] == true,
       subscribeToken: json['subscribeToken'] as String? ?? '',
       subscribeUrl: json['subscribeUrl'] as String? ?? '',
-      expireAt: json['expireAt'] as int?,
-      totalTraffic: json['totalTraffic'] as int?,
-      upload: json['upload'] as int?,
-      download: json['download'] as int?,
+      expireAt: intOf(json['expireAt']),
+      totalTraffic: intOf(json['totalTraffic']),
+      upload: intOf(json['upload']),
+      download: intOf(json['download']),
+      isActive: json['isActive'] == true,
+      needsRelogin: json['needsRelogin'] == true,
+      lastRefreshAt: intOf(json['lastRefreshAt']),
     );
   }
 
@@ -94,6 +121,10 @@ class PanelAccount {
     int? totalTraffic,
     int? upload,
     int? download,
+    bool? isActive,
+    bool? needsRelogin,
+    int? lastRefreshAt,
+    bool clearExpireAt = false,
   }) {
     return PanelAccount(
       id: id,
@@ -103,10 +134,13 @@ class PanelAccount {
       isXboard: isXboard ?? this.isXboard,
       subscribeToken: subscribeToken ?? this.subscribeToken,
       subscribeUrl: subscribeUrl ?? this.subscribeUrl,
-      expireAt: expireAt ?? this.expireAt,
+      expireAt: clearExpireAt ? null : (expireAt ?? this.expireAt),
       totalTraffic: totalTraffic ?? this.totalTraffic,
       upload: upload ?? this.upload,
       download: download ?? this.download,
+      isActive: isActive ?? this.isActive,
+      needsRelogin: needsRelogin ?? this.needsRelogin,
+      lastRefreshAt: lastRefreshAt ?? this.lastRefreshAt,
     );
   }
 }
