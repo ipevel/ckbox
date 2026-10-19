@@ -7,8 +7,6 @@
 
 **常用平台：Android arm64-v8a、Windows amd64。** 桌面端 2012 年及更早的 CPU 请选 Compatible 兼容版。
 
-> Windows 产物未做代码签名，首次运行可能被 SmartScreen 拦截，点「仍要运行」即可。
+> Windows 产物未做代码签名，首次运行可能被 SmartScreen 或智能应用控制拦截，需手动允许后运行。
 
 Code signing policy: [SIGNING-POLICY.md](https://github.com/ipevel/ckbox/blob/main/SIGNING-POLICY.md)
-
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
