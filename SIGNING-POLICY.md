@@ -1,36 +1,60 @@
-# Ckbox 代码签名政策
+# Code signing policy
 
-> ckbox 使用**自有证书**签名，不使用任何第三方项目的签名身份。
+**Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).**
 
-## Windows
+## Team roles
 
-- **签名身份**：自有代码签名证书（OV/EV）。
-- **签名对象**：
-  - `Ckbox.exe` — 主程序（用户态 UI）
-  - `CkboxCore.exe` — 内核进程
-  - `CkboxHelperService.exe` — SYSTEM 提权服务
-  - Inno Setup 安装器
-- **签名链路**：CI 构建产出未签名二进制 → 提交签名服务 → 下载已签名产物 → 打包安装器 → 安装器自身再签名。
-- **内核信任链**：内核先签名，其 SHA256 编译进提权服务，启动前校验，确保被启动的始终是官方内核。
-- 待办：申请 SignPath Foundation（免费开源签名）或自建 CA，拿到 `organization-id` / `project-slug` 后填入 `.github/workflows/build.yaml`。
+| Role | Members |
+|---|---|
+| Committers and reviewers | [@ipevel](https://github.com/ipevel) |
+| Approvers | [@ipevel](https://github.com/ipevel) |
+
+Every change reaches `main` through a pull request, and `main` requires the `analyze-test` check to pass. All team members use multi-factor authentication for both GitHub and SignPath access.
+
+## Privacy policy
+
+This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
+
+Specifically:
+
+- **Proxy traffic** goes only to the nodes the user configures, following the user's own rules.
+- **Subscription and panel requests** go only to the address the user enters.
+- **Latency tests and media-unlock checks** contact public third-party endpoints (`api.ip.sb`, `ip-api.com`, `api.bilibili.com` and similar) only when the user starts them.
+- **Update checks** request `https://github.com/ipevel/ckbox/releases/latest` — a plain HTTPS GET that carries no device or user data. Automatic checks can be disabled in Settings; if the app has not checked for 28 days, one check runs regardless so that security updates are not missed.
+- **No telemetry, analytics or crash reporting** is enabled in released builds.
+- No account, device identifier or usage data is collected or uploaded.
+
+## Signed artifacts (Windows)
+
+| Artifact | Description |
+|---|---|
+| `Ckbox.exe` | Application UI (user mode) |
+| `CkboxCore.exe` | Proxy core (Mihomo) |
+| `CkboxHelperService.exe` | Privileged SYSTEM helper service |
+| `WindowsLoopbackManager.exe` | UWP loopback exemption tool |
+| `Ckbox-<version>-windows-<arch>-setup.exe` | Inno Setup installer |
+
+Signing chain: CI builds unsigned binaries → signing service → signed binaries are downloaded back → the installer is packaged → the installer itself is signed.
+
+Core trust chain: the core is signed first; its SHA256 is compiled into the helper service and verified before launch, so the helper only ever starts the official core.
 
 ## Android
 
-- **签名身份**：自有 keystore（PKCS12，`CN=Ckbox`）。
-- **签名方案**：显式启用 **v2 + v3**，关闭 v1。v3 的 lineage 为未来密钥轮换保留证据链。
-- **禁止降级**：无 keystore 时 release 构建直接失败，不允许静默回落到 debug 签名产出「伪 release」包。
-- **密钥管理**：keystore 由 CI 从 GitHub Secrets 注入，仓库内不存在任何密钥文件。
+- Own keystore (PKCS12, `CN=Ckbox`); v2 + v3 signature schemes, v1 disabled.
+- v3 lineage keeps a proof-of-rotation chain for future key rotation.
+- A release build fails instead of silently falling back to debug signing.
+- The keystore is injected from GitHub Secrets; no key material exists in the repository.
 
-### 所需 Secrets
+### Required secrets
 
-| Secret | 内容 |
+| Secret | Content |
 |---|---|
-| `KEYSTORE` | keystore 文件的 base64 编码 |
-| `KEY_ALIAS` | 密钥别名 |
-| `STORE_PASSWORD` | keystore 密码 |
-| `KEY_PASSWORD` | key 密码 |
+| `KEYSTORE` | base64 of the keystore file |
+| `KEY_ALIAS` | key alias |
+| `STORE_PASSWORD` | keystore password |
+| `KEY_PASSWORD` | key password |
 
-## 密钥轮换
+## Key rotation
 
-- Android 通过 v3 lineage + proof-of-rotation 完成密钥轮换，用户端平滑过渡。
-- Windows 证书到期前续签，轮换时同步更新内核信任链中的 SHA256 白名单。
+- Android: v3 lineage + proof-of-rotation, seamless for users.
+- Windows: renew before expiry; on rotation, update the SHA256 whitelist compiled into the helper service.

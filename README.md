@@ -33,6 +33,10 @@ Ckbox 关注隐私、安全与使用细节，提供稳定流畅的 TUN/VPN 体�
 
 Windows 端由四个进程组成：用户态 UI、内核进程、SYSTEM 提权服务、UWP 回环豁免工具；内核与 UI 通过 `external-controller` 通信，UI 与提权服务通过命名管道通信。
 
+## Code signing policy
+
+Windows 产物由 [SignPath.io](https://about.signpath.io) 提供免费代码签名，证书由 [SignPath Foundation](https://signpath.org) 签发；Android 使用自有 keystore。签名范围、信任链、团队角色与隐私说明见 [SIGNING-POLICY.md](SIGNING-POLICY.md)。
+
 ## 致谢
 
 Ckbox 站在开源社区的肩膀上。
