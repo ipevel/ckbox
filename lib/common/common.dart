@@ -47,3 +47,6 @@ export 'window.dart';
 export 'media_unlock_checker.dart';
 export 'panel_client.dart';
 export 'panel_account_store.dart';
+export 'panel_account_linker.dart';
+export 'panel_account_sync.dart';
+export 'panel_quota_guard.dart';

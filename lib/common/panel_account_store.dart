@@ -49,4 +49,40 @@ class PanelAccountStore {
     accounts.removeWhere((e) => e.id == id);
     await save(accounts);
   }
+
+  /// 设为当前活跃账号（其余账号取消活跃）。
+  Future<void> setActive(String id) async {
+    final accounts = await load();
+    await save(
+      accounts.map((e) => e.copyWith(isActive: e.id == id)).toList(),
+    );
+  }
+
+  /// 当前活跃账号；没有标记时取第一个。
+  Future<PanelAccount?> active() async {
+    final accounts = await load();
+    if (accounts.isEmpty) return null;
+    for (final account in accounts) {
+      if (account.isActive) return account;
+    }
+    return accounts.first;
+  }
+
+  /// 标记或清除「凭据失效，需重新登录」。
+  Future<void> markNeedsRelogin(String id, bool value) async {
+    final accounts = await load();
+    final idx = accounts.indexWhere((e) => e.id == id);
+    if (idx < 0) return;
+    accounts[idx] = accounts[idx].copyWith(needsRelogin: value);
+    await save(accounts);
+  }
+
+  /// 记录一次成功刷新的时间。
+  Future<void> touchRefresh(String id, int timestamp) async {
+    final accounts = await load();
+    final idx = accounts.indexWhere((e) => e.id == id);
+    if (idx < 0) return;
+    accounts[idx] = accounts[idx].copyWith(lastRefreshAt: timestamp);
+    await save(accounts);
+  }
 }
