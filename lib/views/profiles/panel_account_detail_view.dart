@@ -298,7 +298,8 @@ class _AccountTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = info;
     final avatarUrl = data?.avatarUrl ?? '';
-    final email = data?.email.isNotEmpty == true ? data.email : account.email;
+    final email =
+        (data != null && data.email.isNotEmpty) ? data.email : account.email;
     final used = account.usedTraffic;
     final total = account.totalTraffic;
     final ratio = (total != null && total > 0)
