@@ -492,7 +492,7 @@ class PanelClient {
       {'trade_no': tradeNo, 'method': method},
     );
     return PanelCheckout(
-      type: (body['type'] as num?)?.toInt() ?? 1,
+      type: _numInt(body['type']) ?? 1,
       data: body['data'],
     );
   }
@@ -508,7 +508,7 @@ class PanelClient {
       '?trade_no=$tradeNo',
       authData,
     );
-    return (data as num?)?.toInt() ?? -1;
+    return _numInt(data) ?? -1;
   }
 
   Future<List<PanelOrder>> getOrders({
@@ -781,14 +781,14 @@ class PanelNotice {
   factory PanelNotice.fromJson(Map<String, Object?> json) {
     final tags = json['tags'];
     return PanelNotice(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
       title: json['title'] as String? ?? '',
       content: json['content'] as String? ?? '',
       imgUrl: json['img_url'] as String?,
       tags: tags is List
           ? tags.whereType<Object>().map((e) => '$e').toList()
           : const [],
-      createdAt: (json['created_at'] as num?)?.toInt() ?? 0,
+      createdAt: _numInt(json['created_at']) ?? 0,
     );
   }
 }
@@ -809,10 +809,10 @@ class PanelTicketMessage {
 
   factory PanelTicketMessage.fromJson(Map<String, Object?> json) {
     return PanelTicketMessage(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
       isMe: json['is_me'] == true,
       message: json['message'] as String? ?? '',
-      createdAt: (json['created_at'] as num?)?.toInt() ?? 0,
+      createdAt: _numInt(json['created_at']) ?? 0,
     );
   }
 }
@@ -840,10 +840,10 @@ class PanelTicket {
   factory PanelTicket.fromJson(Map<String, Object?> json) {
     final messages = json['message'];
     return PanelTicket(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      level: (json['level'] as num?)?.toInt() ?? 0,
-      replyStatus: (json['reply_status'] as num?)?.toInt() ?? 0,
-      status: (json['status'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
+      level: _numInt(json['level']) ?? 0,
+      replyStatus: _numInt(json['reply_status']) ?? 0,
+      status: _numInt(json['status']) ?? 0,
       subject: json['subject'] as String? ?? '',
       messages: messages is List
           ? messages
@@ -875,10 +875,10 @@ class PanelTrafficLog {
 
   factory PanelTrafficLog.fromJson(Map<String, Object?> json) {
     return PanelTrafficLog(
-      upload: (json['u'] as num?)?.toInt() ?? 0,
-      download: (json['d'] as num?)?.toInt() ?? 0,
-      recordAt: (json['record_at'] as num?)?.toInt() ?? 0,
-      serverRate: (json['server_rate'] as num?)?.toDouble() ?? 0,
+      upload: _numInt(json['u']) ?? 0,
+      download: _numInt(json['d']) ?? 0,
+      recordAt: _numInt(json['record_at']) ?? 0,
+      serverRate: _numDouble(json['server_rate']) ?? 0,
     );
   }
 }
@@ -954,20 +954,20 @@ class PanelPlan {
     final tags = json['tags'];
     final prices = <String, double>{};
     for (final period in _periods) {
-      final value = (json[period] as num?)?.toDouble();
+      final value = _numDouble(json[period]);
       if (value != null) prices[period] = value / 100;
     }
     return PanelPlan(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
       name: json['name'] as String? ?? '',
       content: json['content'] as String? ?? '',
-      transferEnable: (json['transfer_enable'] as num?)?.toInt() ?? 0,
-      speedLimit: (json['speed_limit'] as num?)?.toInt(),
-      deviceLimit: (json['device_limit'] as num?)?.toInt(),
+      transferEnable: _numInt(json['transfer_enable']) ?? 0,
+      speedLimit: _numInt(json['speed_limit']),
+      deviceLimit: _numInt(json['device_limit']),
       show: json['show'] == true,
       sell: json['sell'] == true,
       renew: json['renew'] == true,
-      sort: (json['sort'] as num?)?.toInt() ?? 0,
+      sort: _numInt(json['sort']) ?? 0,
       tags: tags is List
           ? tags.whereType<Object>().map((e) => '$e').toList()
           : const [],
@@ -1007,12 +1007,12 @@ class PanelPaymentMethod {
 
   factory PanelPaymentMethod.fromJson(Map<String, Object?> json) {
     return PanelPaymentMethod(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
       name: json['name'] as String? ?? '',
       payment: json['payment'] as String? ?? '',
       icon: json['icon'] as String?,
-      handlingFeeFixed: (json['handling_fee_fixed'] as num?)?.toInt(),
-      handlingFeePercent: (json['handling_fee_percent'] as num?)?.toDouble(),
+      handlingFeeFixed: _numInt(json['handling_fee_fixed']),
+      handlingFeePercent: _numDouble(json['handling_fee_percent']),
     );
   }
 }
@@ -1066,16 +1066,16 @@ class PanelOrder {
     final plan = json['plan'];
     final payment = json['payment'];
     return PanelOrder(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      planId: (json['plan_id'] as num?)?.toInt() ?? 0,
-      type: (json['type'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
+      planId: _numInt(json['plan_id']) ?? 0,
+      type: _numInt(json['type']) ?? 0,
       period: json['period'] as String? ?? '',
       tradeNo: json['trade_no'] as String? ?? '',
-      totalAmount: (json['total_amount'] as num?)?.toInt() ?? 0,
-      status: (json['status'] as num?)?.toInt() ?? 0,
-      commissionBalance: (json['commission_balance'] as num?)?.toInt() ?? 0,
-      paidAt: (json['paid_at'] as num?)?.toInt(),
-      createdAt: (json['created_at'] as num?)?.toInt() ?? 0,
+      totalAmount: _numInt(json['total_amount']) ?? 0,
+      status: _numInt(json['status']) ?? 0,
+      commissionBalance: _numInt(json['commission_balance']) ?? 0,
+      paidAt: _numInt(json['paid_at']),
+      createdAt: _numInt(json['created_at']) ?? 0,
       planName: plan is Map ? plan['name'] as String? : null,
       paymentName: payment is Map ? payment['name'] as String? : null,
     );
@@ -1118,17 +1118,17 @@ class PanelCoupon {
         ? value.whereType<Object>().map((e) => '$e').toList()
         : const [];
     return PanelCoupon(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
       code: json['code'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      type: (json['type'] as num?)?.toInt() ?? 0,
-      value: (json['value'] as num?)?.toInt() ?? 0,
-      limitUse: (json['limit_use'] as num?)?.toInt(),
-      limitUseWithUser: (json['limit_use_with_user'] as num?)?.toInt(),
+      type: _numInt(json['type']) ?? 0,
+      value: _numInt(json['value']) ?? 0,
+      limitUse: _numInt(json['limit_use']),
+      limitUseWithUser: _numInt(json['limit_use_with_user']),
       limitPlanIds: strings(json['limit_plan_ids']),
       limitPeriod: strings(json['limit_period']),
-      startedAt: (json['started_at'] as num?)?.toInt(),
-      endedAt: (json['ended_at'] as num?)?.toInt(),
+      startedAt: _numInt(json['started_at']),
+      endedAt: _numInt(json['ended_at']),
     );
   }
 }
@@ -1149,10 +1149,10 @@ class PanelInviteCode {
 
   factory PanelInviteCode.fromJson(Map<String, Object?> json) {
     return PanelInviteCode(
-      userId: (json['user_id'] as num?)?.toInt() ?? 0,
+      userId: _numInt(json['user_id']) ?? 0,
       code: json['code'] as String? ?? '',
-      pv: (json['pv'] as num?)?.toInt() ?? 0,
-      createdAt: (json['created_at'] as num?)?.toInt() ?? 0,
+      pv: _numInt(json['pv']) ?? 0,
+      createdAt: _numInt(json['created_at']) ?? 0,
     );
   }
 }
@@ -1209,17 +1209,22 @@ class PanelCommissionLog {
 
   factory PanelCommissionLog.fromJson(Map<String, Object?> json) {
     return PanelCommissionLog(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      orderAmount: (json['order_amount'] as num?)?.toInt() ?? 0,
+      id: _numInt(json['id']) ?? 0,
+      orderAmount: _numInt(json['order_amount']) ?? 0,
       tradeNo: json['trade_no'] as String? ?? '',
-      getAmount: (json['get_amount'] as num?)?.toInt() ?? 0,
-      createdAt: (json['created_at'] as num?)?.toInt() ?? 0,
+      getAmount: _numInt(json['get_amount']) ?? 0,
+      createdAt: _numInt(json['created_at']) ?? 0,
     );
   }
 }
 
-int? _asIntOrNull(Object? value) {
+/// 面板字段类型不统一（int / 数字字符串 / decimal 串 / ISO 时间串），统一容错解析。
+///
+/// 例：server_rate 在数据库是 decimal，PDO 返回字符串 "1.00"，
+/// 直接 as num? 会抛 type 'String' is not a subtype of type 'num?'。
+int? _numInt(Object? value) {
   if (value == null) return null;
+  if (value is int) return value;
   if (value is num) return value.toInt();
   if (value is String) {
     final parsed = int.tryParse(value) ?? double.tryParse(value)?.toInt();
@@ -1229,6 +1234,15 @@ int? _asIntOrNull(Object? value) {
   }
   return null;
 }
+
+double? _numDouble(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
+}
+
+int? _asIntOrNull(Object? value) => _numInt(value);
 
 /// 面板 API 异常。
 class PanelApiException implements Exception {

@@ -5,6 +5,7 @@ import 'package:ckbox/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'panel_login_view.dart';
+import 'panel_markdown.dart';
 
 /// 面板账号详情页。
 ///
@@ -581,9 +582,9 @@ class _NoticeTab extends StatelessWidget {
                 childrenPadding:
                     const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(notice.content),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: PanelMarkdown(notice.content),
                   ),
                 ],
               ),
@@ -597,68 +598,109 @@ class _NoticeTab extends StatelessWidget {
 
 // ------------------------------------------------------------------ 工单
 
-class _TicketTab extends StatelessWidget {
+class _TicketTab extends StatefulWidget {
   final PanelAccount account;
   final PanelClient client;
 
   const _TicketTab({required this.account, required this.client});
 
+  @override
+  State<_TicketTab> createState() => _TicketTabState();
+}
+
+class _TicketTabState extends State<_TicketTab> {
   static const _levels = ['一般', '技术', '财务'];
+  late Future<List<PanelTicket>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<PanelTicket>> _load() => widget.client.getTickets(
+        panelUrl: widget.account.panelUrl,
+        authData: widget.account.authData,
+      );
+
+  void _reload() => setState(() => _future = _load());
 
   @override
   Widget build(BuildContext context) {
-    return _Section<List<PanelTicket>>(
-      title: '工单',
-      loader: () => client.getTickets(
-        panelUrl: account.panelUrl,
-        authData: account.authData,
-      ),
-      builder: (context, tickets) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => _newTicket(context),
-                  icon: const Icon(Icons.add_comment_outlined),
-                  label: const Text('新建工单 / 报障'),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+          child: Row(
+            children: [
+              const Expanded(child: Text('工单')),
+              IconButton(
+                onPressed: _reload,
+                icon: const Icon(Icons.refresh, size: 20),
+                tooltip: '重新加载',
               ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _newTicket,
+              icon: const Icon(Icons.add_comment_outlined),
+              label: const Text('新建工单 / 报障'),
             ),
-            Expanded(
-              child: tickets.isEmpty
-                  ? const Center(child: Text('还没有工单'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      itemCount: tickets.length,
-                      itemBuilder: (context, index) {
-                        final ticket = tickets[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          child: ListTile(
-                            title: Text(ticket.subject),
-                            subtitle: Text(
-                              '#${ticket.id} · ${_levels[ticket.level.clamp(0, 2).toInt()]}'
-                              ' · ${ticket.closed ? '已关闭' : '进行中'}'
-                              ' · ${ticket.replyStatus == 1 ? '有回复' : '待回复'}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => _openTicket(context, ticket),
-                          ),
-                        );
-                      },
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<List<PanelTicket>>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                final error = snapshot.error;
+                final text =
+                    error is PanelApiException ? error.message : '$error';
+                return Center(child: Text(text));
+              }
+              final tickets = snapshot.data ?? const <PanelTicket>[];
+              if (tickets.isEmpty) {
+                return const Center(child: Text('还没有工单'));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                itemCount: tickets.length,
+                itemBuilder: (context, index) {
+                  final ticket = tickets[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      title: Text(ticket.subject),
+                      subtitle: Text(
+                        '#${ticket.id} · '
+                        '${_levels[ticket.level.clamp(0, 2).toInt()]}'
+                        ' · ${ticket.closed ? '已关闭' : '进行中'}'
+                        ' · ${ticket.replyStatus == 1 ? '有回复' : '待回复'}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _openTicket(ticket),
                     ),
-            ),
-          ],
-        );
-      },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
-  Future<void> _newTicket(BuildContext context) async {
+  Future<void> _newTicket() async {
     final subjectController = TextEditingController();
     final messageController = TextEditingController();
     var level = 1;
@@ -703,18 +745,23 @@ class _TicketTab extends StatelessWidget {
                   const SizedBox(height: 20),
                   FilledButton(
                     onPressed: () async {
+                      final subject = subjectController.text.trim();
+                      final message = messageController.text.trim();
+                      if (subject.isEmpty || message.isEmpty) {
+                        sheetContext.showSnackBar('标题和内容都要填');
+                        return;
+                      }
                       try {
-                        await client.saveTicket(
-                          panelUrl: account.panelUrl,
-                          authData: account.authData,
-                          subject: subjectController.text.trim(),
+                        await widget.client.saveTicket(
+                          panelUrl: widget.account.panelUrl,
+                          authData: widget.account.authData,
+                          subject: subject,
                           level: level,
-                          message: messageController.text.trim(),
+                          message: message,
                         );
-                        if (sheetContext.mounted) {
-                          sheetContext.showSnackBar('工单已提交');
-                          Navigator.pop(sheetContext);
-                        }
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
+                        _reload();
+                        if (mounted) context.showSnackBar('工单已提交');
                       } on PanelApiException catch (e) {
                         if (sheetContext.mounted) {
                           sheetContext.showSnackBar(e.message);
@@ -732,7 +779,7 @@ class _TicketTab extends StatelessWidget {
     );
   }
 
-  Future<void> _openTicket(BuildContext context, PanelTicket ticket) async {
+  Future<void> _openTicket(PanelTicket ticket) async {
     await showExtend(
       context,
       builder: (_, type) {
@@ -741,12 +788,13 @@ class _TicketTab extends StatelessWidget {
           title: ticket.subject,
           body: _TicketDetail(
             ticket: ticket,
-            account: account,
-            client: client,
+            account: widget.account,
+            client: widget.client,
           ),
         );
       },
     );
+    _reload();
   }
 }
 
@@ -1095,29 +1143,7 @@ class _TradeTab extends StatelessWidget {
         return;
       }
     }
-    final methods = await client.getPaymentMethods(
-      panelUrl: account.panelUrl,
-      authData: account.authData,
-    );
-    if (!context.mounted) return;
-    if (methods.isEmpty) {
-      context.showSnackBar('该面板未开放支付方式');
-      return;
-    }
-    final method = await showDialog<PanelPaymentMethod>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text('${plan.name} · ${_labels()[period] ?? period}'),
-        children: [
-          for (final m in methods)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, m),
-              child: Text(m.name),
-            ),
-        ],
-      ),
-    );
-    if (method == null || !context.mounted) return;
+
     try {
       final tradeNo = await client.saveOrder(
         panelUrl: account.panelUrl,
@@ -1126,6 +1152,45 @@ class _TradeTab extends StatelessWidget {
         period: period,
         couponCode: coupon.isEmpty ? null : coupon,
       );
+      final methods = await client.getPaymentMethods(
+        panelUrl: account.panelUrl,
+        authData: account.authData,
+      );
+      if (!context.mounted) return;
+      if (methods.isEmpty) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('订单已创建'),
+            content: Text(
+              '订单号：$tradeNo\n\n'
+              '该面板未配置可用支付方式，无法继续付款。'
+              '可在「查看我的订单」里看到这笔待支付订单并取消。',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('知道了'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      final method = await showDialog<PanelPaymentMethod>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          title: Text('${plan.name} · ${_labels()[period] ?? period}'),
+          children: [
+            for (final m in methods)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, m),
+                child: Text(m.name),
+              ),
+          ],
+        ),
+      );
+      if (method == null) return;
       final result = await client.checkout(
         panelUrl: account.panelUrl,
         authData: account.authData,
