@@ -298,8 +298,7 @@ class _AccountTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = info;
     final avatarUrl = data?.avatarUrl ?? '';
-    final email =
-        (data?.email.isNotEmpty ?? false) ? data.email : account.email;
+    final email = data?.email.isNotEmpty == true ? data.email : account.email;
     final used = account.usedTraffic;
     final total = account.totalTraffic;
     final ratio = (total != null && total > 0)
@@ -782,7 +781,7 @@ class _TicketDetailState extends State<_TicketDetail> {
       );
       if (mounted) setState(() => _ticket = detail);
     } on PanelApiException catch (e) {
-      if (context.mounted) context.showSnackBar(e.message);
+      if (mounted) context.showSnackBar(e.message);
     }
   }
 

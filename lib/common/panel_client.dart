@@ -166,18 +166,6 @@ class PanelClient {
     );
   }
 
-  /// 登录态校验：GET {panel}/api/v1/user/checkLogin
-  ///
-  /// 返回 false 表示凭据已失效，需要用户重新登录。
-  Future<bool> checkLogin({
-    required String panelUrl,
-    required String authData,
-  }) async {
-    final url = '${normalizePanelUrl(panelUrl)}/api/v1/user/checkLogin';
-    final data = await _getData(url, authData);
-    return data['is_login'] == true;
-  }
-
   /// 用户信息：GET {panel}/api/v1/user/info
   Future<PanelUserInfo> getUserInfo({
     required String panelUrl,
@@ -256,25 +244,6 @@ class PanelClient {
   }
 
   // ---------------------------------------------------------------- B / C / D
-
-  /// 面板统计：待处理订单数 / 未关闭工单数 / 邀请人数。
-  Future<PanelStat> getStat({
-    required String panelUrl,
-    required String authData,
-  }) async {
-    final data = await _authData(
-      '${normalizePanelUrl(panelUrl)}/api/v1/user/getStat',
-      authData,
-    );
-    final list = data is List ? data : const [];
-    int at(int i) =>
-        i < list.length && list[i] is num ? (list[i] as num).toInt() : 0;
-    return PanelStat(
-      pendingOrders: at(0),
-      openTickets: at(1),
-      invitedUsers: at(2),
-    );
-  }
 
   /// 公告：响应外层是 `{data,total}`，无 status/message 信封。
   Future<List<PanelNotice>> getNotices({
@@ -775,19 +744,6 @@ class PanelClient {
     if (value is String) return double.tryParse(value);
     return null;
   }
-}
-
-/// 面板统计（getStat 的定长三数组）。
-class PanelStat {
-  final int pendingOrders;
-  final int openTickets;
-  final int invitedUsers;
-
-  const PanelStat({
-    this.pendingOrders = 0,
-    this.openTickets = 0,
-    this.invitedUsers = 0,
-  });
 }
 
 /// 公告。
