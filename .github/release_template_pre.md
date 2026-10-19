@@ -10,3 +10,5 @@
 > Windows 产物未做代码签名，首次运行可能被 SmartScreen 拦截，点「仍要运行」即可。
 
 Code signing policy: [SIGNING-POLICY.md](https://github.com/ipevel/ckbox/blob/main/SIGNING-POLICY.md)
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
