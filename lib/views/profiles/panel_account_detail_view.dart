@@ -267,7 +267,7 @@ String _date(int? seconds) {
   final dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
   final mm = dt.month.toString().padLeft(2, '0');
   final dd = dt.day.toString().padLeft(2, '0');
-  return '${dt.year}-$mm-${dd}';
+  return '${dt.year}-$mm-$dd';
 }
 
 Map<String, String> _labels() => const {
@@ -297,6 +297,9 @@ class _AccountTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = info;
+    final avatarUrl = data?.avatarUrl ?? '';
+    final email =
+        (data?.email.isNotEmpty ?? false) ? data.email : account.email;
     final used = account.usedTraffic;
     final total = account.totalTraffic;
     final ratio = (total != null && total > 0)
@@ -316,11 +319,10 @@ class _AccountTab extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundImage: (data?.avatarUrl != null &&
-                              (data!.avatarUrl ?? '').isNotEmpty)
-                          ? NetworkImage(data!.avatarUrl!)
-                          : null,
-                      child: (data?.avatarUrl ?? '').isEmpty
+                      backgroundImage: avatarUrl.isEmpty
+                          ? null
+                          : NetworkImage(avatarUrl),
+                      child: avatarUrl.isEmpty
                           ? const Icon(Icons.person_outline)
                           : null,
                     ),
@@ -330,9 +332,7 @@ class _AccountTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            data?.email.isNotEmpty == true
-                                ? data!.email
-                                : account.email,
+                            email,
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
@@ -630,7 +630,7 @@ class _TicketTab extends StatelessWidget {
                           child: ListTile(
                             title: Text(ticket.subject),
                             subtitle: Text(
-                              '#${ticket.id} · ${_levels[ticket.level.clamp(0, 2)]}'
+                              '#${ticket.id} · ${_levels[ticket.level.clamp(0, 2).toInt()]}'
                               ' · ${ticket.closed ? '已关闭' : '进行中'}'
                               ' · ${ticket.replyStatus == 1 ? '有回复' : '待回复'}',
                               style: const TextStyle(fontSize: 12),
@@ -782,7 +782,7 @@ class _TicketDetailState extends State<_TicketDetail> {
       );
       if (mounted) setState(() => _ticket = detail);
     } on PanelApiException catch (e) {
-      if (mounted) context.showSnackBar(e.message);
+      if (context.mounted) context.showSnackBar(e.message);
     }
   }
 
@@ -853,7 +853,7 @@ class _TicketDetailState extends State<_TicketDetail> {
                               _controller.clear();
                               await _reload();
                             } on PanelApiException catch (e) {
-                              if (mounted) context.showSnackBar(e.message);
+                              if (context.mounted) context.showSnackBar(e.message);
                             } finally {
                               if (mounted) setState(() => _busy = false);
                             }
@@ -874,7 +874,7 @@ class _TicketDetailState extends State<_TicketDetail> {
                               );
                               await _reload();
                             } on PanelApiException catch (e) {
-                              if (mounted) context.showSnackBar(e.message);
+                              if (context.mounted) context.showSnackBar(e.message);
                             } finally {
                               if (mounted) setState(() => _busy = false);
                             }
@@ -1342,9 +1342,9 @@ class _InviteTab extends StatelessWidget {
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: '金额（单位：元，可转 ${_money(invite.availableCommission)}）',
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [

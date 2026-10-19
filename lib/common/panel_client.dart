@@ -578,14 +578,17 @@ class PanelClient {
     int? planId,
     String? period,
   }) async {
+    final payload = <String, dynamic>{'code': code};
+    if (planId != null) {
+      payload['plan_id'] = planId;
+    }
+    if (period != null) {
+      payload['period'] = period;
+    }
     final body = await _postBody(
       '${normalizePanelUrl(panelUrl)}/api/v1/user/coupon/check',
       authData,
-      {
-        'code': code,
-        if (planId != null) 'plan_id': planId,
-        if (period != null) 'period': period,
-      },
+      payload,
     );
     final data = body['data'];
     return PanelCoupon.fromJson(
@@ -702,10 +705,7 @@ class PanelClient {
 
   /// 带鉴权头的 GET，返回完整响应体 Map。
   Future<Map<String, Object?>> _authBody(String url, String authData) async {
-    return _requestMap(
-      url,
-      headers: authData == null ? null : _authHeaders(authData),
-    );
+    return _requestMap(url, headers: _authHeaders(authData));
   }
 
   /// 带鉴权头的 POST，返回完整响应体 Map。
@@ -763,7 +763,8 @@ class PanelClient {
     if (value is String) {
       final parsed = int.tryParse(value) ?? double.tryParse(value)?.toInt();
       if (parsed != null) return parsed;
-      return DateTime.tryParse(value)?.millisecondsSinceEpoch ~/ 1000;
+      final ms = DateTime.tryParse(value)?.millisecondsSinceEpoch;
+      return ms == null ? null : ms ~/ 1000;
     }
     return null;
   }
@@ -1198,9 +1199,7 @@ class PanelInvite {
   int get commissionRate => _at(3);
   int get availableCommission => _at(4);
 
-  int _at(int i) => i < stat.length && stat[i] is num
-      ? (stat[i] as num).toInt()
-      : 0;
+  int _at(int i) => i < stat.length ? stat[i] : 0;
 
   factory PanelInvite.fromJson(Map<String, Object?> json) {
     final codes = json['codes'];
@@ -1254,7 +1253,8 @@ int? _asIntOrNull(Object? value) {
   if (value is String) {
     final parsed = int.tryParse(value) ?? double.tryParse(value)?.toInt();
     if (parsed != null) return parsed;
-    return DateTime.tryParse(value)?.millisecondsSinceEpoch ~/ 1000;
+    final ms = DateTime.tryParse(value)?.millisecondsSinceEpoch;
+    return ms == null ? null : ms ~/ 1000;
   }
   return null;
 }
