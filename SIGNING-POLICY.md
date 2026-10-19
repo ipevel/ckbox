@@ -1,6 +1,15 @@
 # Code signing policy
 
-**Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).**
+**Windows 产物未做代码签名**；Android 使用自有 keystore 签名。
+
+## 当前签名状态
+
+| 平台 | 状态 | 说明 |
+|---|---|---|
+| Android | 已签名 | 自有 keystore（PKCS12，`CN=Ckbox`），v2 + v3 方案 |
+| Windows | **未签名** | CI 直接产出未签名二进制与安装器 |
+
+Windows 未签名的后果：首次运行 `setup.exe` 或主程序时，SmartScreen 可能提示「Windows 已保护你的电脑」，需点「更多信息 → 仍要运行」；若系统开启了**智能应用控制**，未签名程序可能被直接拦截，需在「Windows 安全中心 → 应用和浏览器控制 → 智能应用控制」中关闭后才能运行。关闭智能应用控制后无法在不重装系统的前提下重新开启，请自行权衡。
 
 ## Team roles
 
@@ -9,7 +18,7 @@
 | Committers and reviewers | [@ipevel](https://github.com/ipevel) |
 | Approvers | [@ipevel](https://github.com/ipevel) |
 
-Every change reaches `main` through a pull request, and `main` requires the `analyze-test` check to pass. All team members use multi-factor authentication for both GitHub and SignPath access.
+Every change reaches `main` through a pull request, and `main` requires the `analyze-test` check to pass. All team members use multi-factor authentication for GitHub access.
 
 ## Privacy policy
 
@@ -24,7 +33,7 @@ Specifically:
 - **No telemetry, analytics or crash reporting** is enabled in released builds.
 - No account, device identifier or usage data is collected or uploaded.
 
-## Signed artifacts (Windows)
+## Windows artifacts
 
 | Artifact | Description |
 |---|---|
@@ -34,9 +43,9 @@ Specifically:
 | `WindowsLoopbackManager.exe` | UWP loopback exemption tool |
 | `Ckbox-<version>-windows-<arch>-setup.exe` | Inno Setup installer |
 
-Signing chain: CI builds unsigned binaries → signing service → signed binaries are downloaded back → the installer is packaged → the installer itself is signed.
+以上产物**均未做代码签名**，由 CI 直接构建产出。
 
-Core trust chain: the core is signed first; its SHA256 is compiled into the helper service and verified before launch, so the helper only ever starts the official core.
+**完整性校验（非签名）**：提权服务在启动内核前会校验 `CkboxCore.exe` 的 SHA256，该值与构建时写入的白名单一致才允许启动，因此服务只会拉起随包发布的内核；这不是数字签名，不能替代操作系统层面的签名信任。
 
 ## Android
 
@@ -57,4 +66,4 @@ Core trust chain: the core is signed first; its SHA256 is compiled into the help
 ## Key rotation
 
 - Android: v3 lineage + proof-of-rotation, seamless for users.
-- Windows: renew before expiry; on rotation, update the SHA256 whitelist compiled into the helper service.
+- Windows: 无签名证书需要轮换；更换内核构建时同步更新提权服务内嵌的 SHA256 白名单。

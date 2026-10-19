@@ -35,7 +35,7 @@ Windows 端由四个进程组成：用户态 UI、内核进程、SYSTEM 提权�
 
 ## Code signing policy
 
-Windows 产物由 [SignPath.io](https://about.signpath.io) 提供免费代码签名，证书由 [SignPath Foundation](https://signpath.org) 签发；Android 使用自有 keystore。签名范围、信任链、团队角色与隐私说明见 [SIGNING-POLICY.md](SIGNING-POLICY.md)。
+Android 使用自有 keystore 签名；**Windows 产物未做代码签名**，首次运行可能被 SmartScreen 或智能应用控制拦截，需手动允许。签名范围、完整性校验、团队角色与隐私说明见 [SIGNING-POLICY.md](SIGNING-POLICY.md)。
 
 ## 致谢
 
