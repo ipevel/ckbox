@@ -213,6 +213,7 @@ class PanelClient {
   Map<String, Object?> _extractData(Response<Object?> resp) {
     final body = resp.data;
     if (body is Map) {
+      _throwIfFailed(body, resp.statusCode);
       if (body.containsKey('data') && body['data'] != null) {
         final d = body['data'];
         return d is Map ? Map<String, Object?>.from(d) : <String, Object?>{};
@@ -672,6 +673,16 @@ class PanelClient {
     );
   }
 
+  /// 面板以 HTTP 200 + `{status:'fail'}` 返回失败时，按业务失败处理并带出 message。
+  static void _throwIfFailed(Map<Object?, Object?> body, int? statusCode) {
+    if (body['status'] == 'fail') {
+      throw PanelApiException(
+        (body['message'] as String?) ?? '面板返回失败',
+        statusCode: statusCode,
+      );
+    }
+  }
+
   /// 带鉴权头的 GET，返回完整响应体 Map。
   Future<Map<String, Object?>> _authBody(String url, String authData) async {
     return _requestMap(url, headers: _authHeaders(authData));
@@ -704,7 +715,10 @@ class PanelClient {
               options: Options(headers: headers),
             );
       final body = resp.data;
-      if (body is Map) return Map<String, Object?>.from(body);
+      if (body is Map) {
+        _throwIfFailed(body, resp.statusCode);
+        return Map<String, Object?>.from(body);
+      }
       if (body is String && body.isNotEmpty) {
         try {
           final decoded = jsonDecode(body);
@@ -888,8 +902,9 @@ class PanelSession {
   });
 
   factory PanelSession.fromJson(Map<String, Object?> json) {
+    final rawId = json['id'];
     return PanelSession(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: rawId is num ? rawId.toInt() : (int.tryParse('$rawId') ?? 0),
       name: json['name'] as String? ?? '',
       ip: json['ip'] as String?,
       userAgent: json['ua'] as String?,

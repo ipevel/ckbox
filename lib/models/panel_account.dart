@@ -91,21 +91,24 @@ class PanelAccount {
       };
 
   factory PanelAccount.fromJson(Map<String, Object?> json) {
+    int? intOf(Object? value) => value is num
+        ? value.toInt()
+        : (value is String ? int.tryParse(value) : null);
     return PanelAccount(
       id: json['id'] as String? ?? '',
       panelUrl: json['panelUrl'] as String? ?? '',
       email: json['email'] as String? ?? '',
       authData: json['authData'] as String? ?? '',
-      isXboard: json['isXboard'] as bool? ?? false,
+      isXboard: json['isXboard'] == true,
       subscribeToken: json['subscribeToken'] as String? ?? '',
       subscribeUrl: json['subscribeUrl'] as String? ?? '',
-      expireAt: json['expireAt'] as int?,
-      totalTraffic: json['totalTraffic'] as int?,
-      upload: json['upload'] as int?,
-      download: json['download'] as int?,
-      isActive: json['isActive'] as bool? ?? false,
-      needsRelogin: json['needsRelogin'] as bool? ?? false,
-      lastRefreshAt: json['lastRefreshAt'] as int?,
+      expireAt: intOf(json['expireAt']),
+      totalTraffic: intOf(json['totalTraffic']),
+      upload: intOf(json['upload']),
+      download: intOf(json['download']),
+      isActive: json['isActive'] == true,
+      needsRelogin: json['needsRelogin'] == true,
+      lastRefreshAt: intOf(json['lastRefreshAt']),
     );
   }
 

@@ -87,7 +87,7 @@ class _PanelAccountDetailViewState extends State<PanelAccountDetailView>
       return Center(child: Text(_error ?? '账号不可用'));
     }
     if (account.needsRelogin) {
-      return _NeedRelogin(account: account, onLogin: _load);
+      return _NeedRelogin(account: account, onReload: _load);
     }
     return Column(
       children: [
@@ -134,9 +134,9 @@ class _PanelAccountDetailViewState extends State<PanelAccountDetailView>
 
 class _NeedRelogin extends StatelessWidget {
   final PanelAccount account;
-  final VoidCallback onLogin;
+  final Future<void> Function() onReload;
 
-  const _NeedRelogin({required this.account, required this.onLogin});
+  const _NeedRelogin({required this.account, required this.onReload});
 
   @override
   Widget build(BuildContext context) {
@@ -156,21 +156,27 @@ class _NeedRelogin extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => showExtend(
-                context,
-                builder: (_, type) {
-                  return AdaptiveSheetScaffold(
-                    type: type,
-                    title: '重新登录',
-                    body: PanelLoginView(
-                      onLogin: (url) async {
-                        await globalState.appController
-                            .addProfileFormURL(url);
-                      },
-                    ),
-                  );
-                },
-              ),
+              onPressed: () async {
+                await showExtend(
+                  context,
+                  builder: (_, type) {
+                    return AdaptiveSheetScaffold(
+                      type: type,
+                      title: '重新登录',
+                      body: PanelLoginView(
+                        existingId: account.id,
+                        onLogin: (url) async {
+                          await PanelAccountLinker.attach(
+                            newUrl: url,
+                            oldUrl: account.subscribeUrl,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                );
+                await onReload();
+              },
               child: const Text('重新登录'),
             ),
           ],
@@ -185,13 +191,11 @@ class _Section<T> extends StatefulWidget {
   final String title;
   final Future<T> Function() loader;
   final Widget Function(BuildContext context, T data) builder;
-  final String emptyText;
 
   const _Section({
     required this.title,
     required this.loader,
     required this.builder,
-    this.emptyText = '暂无数据',
   });
 
   @override
@@ -268,6 +272,14 @@ String _date(int? seconds) {
   final mm = dt.month.toString().padLeft(2, '0');
   final dd = dt.day.toString().padLeft(2, '0');
   return '${dt.year}-$mm-$dd';
+}
+
+/// 隐藏订阅 URL 末段的 token，避免截图泄露凭据。
+String _maskUrl(String url) {
+  if (url.isEmpty) return '—';
+  final index = url.lastIndexOf('/');
+  if (index <= 0 || index == url.length - 1) return url;
+  return '${url.substring(0, index + 1)}••••••';
 }
 
 Map<String, String> _labels() => const {
@@ -370,9 +382,7 @@ class _AccountTab extends StatelessWidget {
               _kv('佣金余额', _money(data?.commissionBalance)),
               _kv('注册时间', _date(data?.createdAt)),
               _kv('上次登录', _date(data?.lastLoginAt)),
-              _kv('订阅地址', account.subscribeUrl.isEmpty
-                  ? '—'
-                  : account.subscribeUrl),
+              _kv('订阅地址', _maskUrl(account.subscribeUrl)),
               _kv('面板类型', account.isXboard ? 'Xboard' : 'v2board'),
             ],
           ),
@@ -1061,7 +1071,6 @@ class _TradeTab extends StatelessWidget {
         ],
       ),
     );
-    controller.dispose();
     return result;
   }
 

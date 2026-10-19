@@ -13,7 +13,10 @@ class PanelLoginView extends StatefulWidget {
   /// 登录成功回调，参数为订阅 URL。
   final Future<void> Function(String subscribeUrl) onLogin;
 
-  const PanelLoginView({super.key, required this.onLogin});
+  /// 重登录时传入既有账号 id，凭据就地更新而不新建账号。
+  final String? existingId;
+
+  const PanelLoginView({super.key, required this.onLogin, this.existingId});
 
   @override
   State<PanelLoginView> createState() => _PanelLoginViewState();
@@ -73,7 +76,8 @@ class _PanelLoginViewState extends State<PanelLoginView> {
       );
 
       final account = PanelAccount(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.existingId ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         panelUrl: PanelClient.normalizePanelUrl(panelUrl),
         email: email,
         authData: login.authData,
@@ -84,8 +88,14 @@ class _PanelLoginViewState extends State<PanelLoginView> {
         totalTraffic: sub.transferEnable,
         upload: sub.upload,
         download: sub.download,
+        isActive: widget.existingId != null,
+        needsRelogin: false,
       );
       await _store.upsert(account);
+      final accounts = await _store.load();
+      if (!accounts.any((e) => e.isActive)) {
+        await _store.setActive(account.id);
+      }
 
       if (!mounted) return;
       await widget.onLogin(sub.subscribeUrl);

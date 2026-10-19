@@ -37,6 +37,21 @@ class PanelAccountLinker {
     return matched.length;
   }
 
+  /// 登录/重登录后的订阅接入。
+  ///
+  /// 已有同 URL 订阅则复用；否则若给了旧 URL 且存在对应订阅则改址；
+  /// 最后才新建。避免重登录时重复导入同一个订阅。
+  static Future<void> attach({required String newUrl, String? oldUrl}) async {
+    if (newUrl.isEmpty) return;
+    final profiles = globalState.config.profiles;
+    if (profiles.any((e) => e.url == newUrl)) return;
+    if (oldUrl != null && oldUrl.isNotEmpty) {
+      final rebound = await rebind(oldUrl: oldUrl, newUrl: newUrl);
+      if (rebound > 0) return;
+    }
+    await globalState.appController.addProfileFormURL(newUrl);
+  }
+
   /// 确保该账号的订阅已导入；缺失时创建。
   ///
   /// 不触发导航，可在后台调用。失败返回 null。

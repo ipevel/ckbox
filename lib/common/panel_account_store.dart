@@ -17,10 +17,18 @@ class PanelAccountStore {
     if (raw == null || raw.isEmpty) return [];
     try {
       final list = jsonDecode(raw) as List<Object?>;
-      return list
-          .whereType<Map>()
-          .map((e) => PanelAccount.fromJson(Map<String, Object?>.from(e)))
-          .toList();
+      final accounts = <PanelAccount>[];
+      for (final item in list) {
+        if (item is! Map) continue;
+        try {
+          accounts.add(
+            PanelAccount.fromJson(Map<String, Object?>.from(item)),
+          );
+        } catch (_) {
+          // 单条损坏不牵连其余账号
+        }
+      }
+      return accounts;
     } catch (_) {
       return [];
     }

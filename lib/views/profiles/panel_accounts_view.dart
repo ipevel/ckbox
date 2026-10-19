@@ -1,5 +1,4 @@
 import 'package:ckbox/providers/providers.dart';
-import 'package:ckbox/state.dart';
 import 'package:ckbox/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -121,27 +120,29 @@ class _PanelAccountsViewState extends ConsumerState<PanelAccountsView> {
   }
 
   Future<void> _relogin(PanelAccount account) async {
-    await _store.remove(account.id);
-    await _load();
-    if (!mounted) return;
-    await _addPanel();
+    await _addPanel(existingId: account.id, oldUrl: account.subscribeUrl);
   }
 
-  Future<void> _addPanel() async {
-    showExtend(
+  Future<void> _addPanel({String? existingId, String? oldUrl}) async {
+    await showExtend(
       context,
       builder: (_, type) {
         return AdaptiveSheetScaffold(
           type: type,
-          title: '面板登录',
+          title: existingId == null ? '面板登录' : '重新登录',
           body: PanelLoginView(
+            existingId: existingId,
             onLogin: (subscribeUrl) async {
-              await globalState.appController.addProfileFormURL(subscribeUrl);
+              await PanelAccountLinker.attach(
+                newUrl: subscribeUrl,
+                oldUrl: oldUrl,
+              );
             },
           ),
         );
       },
     );
+    await _load();
   }
 
   void _openDetail(PanelAccount account) {
