@@ -98,7 +98,13 @@ class _PanelLoginViewState extends State<PanelLoginView> {
       }
 
       if (!mounted) return;
+      // 登录成功：先给出明确反馈，再由 onLogin 处理订阅导入/跳转
+      context.showSnackBar('已登录，订阅已导入');
       await widget.onLogin(sub.subscribeUrl);
+      if (!mounted) return;
+      if (ModalRoute.of(context)?.isCurrent == true) {
+        Navigator.pop(context);
+      }
     } on PanelApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
