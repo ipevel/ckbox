@@ -16,8 +16,8 @@ env:
   GRADLE_OPTS: -Dorg.gradle.vfs.watch=false
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   SENTRY_BACKEND: none
-  # 签名凭据从 GitHub Secrets 注入
-  SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+  # 自签代码签名证书密码（PFX 本体在运行时解码，不落仓库）
+  WIN_SIGN_PFX_PASSWORD: ${{ secrets.CKBOX_WIN_SIGN_PFX_PASSWORD }}
   IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN || vars.IPINFO_TOKEN }}
 
 jobs:
@@ -167,6 +167,20 @@ jobs:
           dart run build_runner build
           dart setup.dart ${{ matrix.platform }} --arch ${{ matrix.arch }} ${{ env.IS_STABLE == 'true' && '--env stable' || '' }} ${{ matrix.compatible == true && '--compatible' || '' }}
 
+      - name: Prepare Windows Signing Certificate
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        env:
+          PFX_BASE64: ${{ secrets.CKBOX_WIN_SIGN_PFX_BASE64 }}
+        run: |
+          if (-not $env:PFX_BASE64) {
+            throw 'CKBOX_WIN_SIGN_PFX_BASE64 未配置，无法签名 Windows 产物。'
+          }
+          $path = Join-Path $env:RUNNER_TEMP 'ckbox-sign.pfx'
+          [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:PFX_BASE64))
+          "WIN_SIGN_PFX_PATH=$path" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "签名证书已就绪：$path"
+
       - name: Build Core (Windows)
         if: matrix.platform == 'windows'
         shell: bash
@@ -175,6 +189,13 @@ jobs:
           dart run build_runner build
           dart setup.dart windows --arch ${{ matrix.arch }} --out core-only ${{ matrix.compatible == true && '--compatible' || '' }}
 
+      # 必须先签 core：helper 内嵌的是签名后 core 的 SHA256
+      - name: Sign Core (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .github/scripts/sign-windows.ps1 libclash/windows/CkboxCore.exe
+
       - name: Build HelperService (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -182,6 +203,12 @@ jobs:
           $coreHash = (Get-FileHash libclash/windows/CkboxCore.exe -Algorithm SHA256).Hash.ToLower()
           Write-Host "Core SHA256 (TOKEN for Helper): $coreHash"
           dart setup.dart windows --arch ${{ matrix.arch }} --out helper --core-hash $coreHash ${{ matrix.compatible == true && '--compatible' || '' }}
+
+      - name: Sign Helper (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .github/scripts/sign-windows.ps1 libclash/windows/CkboxHelperService.exe
 
       - name: Build Ckbox (Windows)
         if: matrix.platform == 'windows'
@@ -207,11 +234,24 @@ jobs:
           }
           flutter @flutterArgs
 
+      - name: Sign App Binaries (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $dir = if ('${{ matrix.arch }}' -eq 'arm64') { 'build/windows/arm64/runner/Release' } else { 'build/windows/x64/runner/Release' }
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .github/scripts/sign-windows.ps1 "$dir/Ckbox.exe" "$dir/WindowsLoopbackManager.exe"
+
       - name: Package Windows Application
         if: matrix.platform == 'windows'
         shell: bash
         run: |
           dart windows/packaging/exe/package_windows.dart --arch ${{ matrix.arch }} ${{ matrix.compatible == true && '--compatible' || '' }} --env ${{ env.IS_STABLE == 'true' && 'stable' || 'pre' }}
+
+      - name: Sign Installer (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .github/scripts/sign-windows.ps1 dist
 
       # --- 上传产物（默认 zip；upload job 下载后解压得到真实文件名） ---
       - name: Upload Artifacts (Android)
@@ -241,42 +281,6 @@ jobs:
           overwrite: true
           if-no-files-found: warn
 
-      # --- Windows 签名链：待签名服务接入 ---
-      - name: Install SignPath (Windows)
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        env:
-          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
-        run: |
-          if (-not $env:SIGNPATH_API_TOKEN) {
-            Write-Host "SIGNPATH_API_TOKEN is not configured. Skipping module installation."
-            exit 0
-          }
-          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-          Install-Module -Name SignPath -Force -Scope CurrentUser -Repository PSGallery
-
-      - name: Set Signing Policy Slug (Windows)
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        run: |
-          $isStable = '${{ env.IS_STABLE }}' -eq 'true'
-          $isPre = '${{ env.IS_PRERELEASE }}' -eq 'true'
-          if ($isStable) {
-            $exePolicy = "release-signing"
-            $installerPolicy = "release-signing"
-          } elseif ($isPre) {
-            $exePolicy = "test-signing"
-            $installerPolicy = "release-signing"
-          } else {
-            $exePolicy = "test-signing"
-            $installerPolicy = "test-signing"
-          }
-          "EXE_SIGNING_POLICY_SLUG=$exePolicy" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "INSTALLER_SIGNING_POLICY_SLUG=$installerPolicy" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-      # TODO：接入签名服务，对四个对象分别提交签名请求（core / helper / exe / installer）
-      # organization-id 与 project-slug 待 ckbox 签名项目申请通过后填入
 
   upload:
     if: github.event_name == 'push'
