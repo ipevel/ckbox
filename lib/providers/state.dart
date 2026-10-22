@@ -1,4 +1,3 @@
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/enum/enum.dart';
 import 'package:ckbox/models/models.dart';

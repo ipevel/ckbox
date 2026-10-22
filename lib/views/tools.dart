@@ -19,7 +19,6 @@ import 'package:ckbox/views/config/ntp.dart';
 import 'package:ckbox/views/config/sniffer.dart';
 import 'package:ckbox/views/config/tunnel.dart';
 import 'package:ckbox/views/connection/connections.dart';
-import 'package:ckbox/views/connection/requests.dart';
 import 'package:ckbox/views/hotkey.dart';
 import 'package:ckbox/views/other_setting.dart';
 import 'package:ckbox/widgets/widgets.dart';

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:ckbox/common/common.dart';
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';

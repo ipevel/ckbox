@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/enum/enum.dart';
-import 'package:ckbox/models/selector.dart';
 import 'package:ckbox/plugins/app.dart';
 import 'package:ckbox/providers/config.dart';
 import 'package:ckbox/providers/state.dart';
@@ -12,7 +11,6 @@ import 'package:ckbox/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:material_ui/material_ui.dart';
 
 class ThemeModeItem {
   final ThemeMode themeMode;
