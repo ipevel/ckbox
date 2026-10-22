@@ -1,5 +1,6 @@
 import 'package:ckbox/plugins/app.dart';
 import 'package:ckbox/state.dart';
+import 'dart:ffi';
 
 import 'system.dart';
 
@@ -8,6 +9,22 @@ class Android {
     app.onExit = () async {
       await globalState.appController.savePreferences();
     };
+  }
+
+  void purgeMemory() {
+    final sdk = globalState.appState.version;
+    if (sdk > 0 && sdk < 28) {
+      return;
+    }
+    try {
+      final libc = DynamicLibrary.open('libc.so');
+      final mallopt = libc
+          .lookupFunction<
+            Int32 Function(Int32 param, Int32 value),
+            int Function(int param, int value)
+          >('mallopt');
+      mallopt(sdk >= 34 ? -104 : -101, 0);
+    } catch (_) {}
   }
 }
 
