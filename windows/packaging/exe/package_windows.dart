@@ -34,7 +34,10 @@ void main(List<String> arguments) async {
     exit(1);
   }
   final pubspecContent = pubspecFile.readAsStringSync();
-  final versionMatch = RegExp(r'^version:\s*([^\s+]+)', multiLine: true).firstMatch(pubspecContent);
+  final versionMatch = RegExp(
+    r'^version:\s*([^\s+]+)',
+    multiLine: true,
+  ).firstMatch(pubspecContent);
   if (versionMatch == null) {
     print('Error: Could not find version in pubspec.yaml.');
     exit(1);
@@ -58,7 +61,9 @@ void main(List<String> arguments) async {
   final sourceDir = path.absolute('build/windows/$buildDirName/runner/Release');
   print('Source Directory: $sourceDir');
   if (!Directory(sourceDir).existsSync()) {
-    print('Error: Source directory $sourceDir does not exist. Run flutter build first.');
+    print(
+      'Error: Source directory $sourceDir does not exist. Run flutter build first.',
+    );
     exit(1);
   }
 
@@ -78,7 +83,9 @@ void main(List<String> arguments) async {
       locales.add({
         'lang': locale['lang'],
         // Extract just the filename and resolve against the packaging directory
-        'file': fileVal != null ? path.join(packagingDir, path.basename(fileVal)) : null,
+        'file': fileVal != null
+            ? path.join(packagingDir, path.basename(fileVal))
+            : null,
       });
     }
   }
@@ -118,10 +125,7 @@ void main(List<String> arguments) async {
   final context = Context.create();
   context.variables = variables;
 
-  final template = Template.parse(
-    context,
-    Source.fromString(templateContent),
-  );
+  final template = Template.parse(context, Source.fromString(templateContent));
 
   final renderedContent = '\uFEFF${await template.render(context)}';
   final tempIssFile = File('windows/packaging/exe/temp_setup.iss');
@@ -153,7 +157,10 @@ void main(List<String> arguments) async {
     }
 
     // 7. Move generated installer to dist/
-    final generatedInstallerPath = path.join('windows/packaging/exe', '$outputBaseName.exe');
+    final generatedInstallerPath = path.join(
+      'windows/packaging/exe',
+      '$outputBaseName.exe',
+    );
     final generatedInstallerFile = File(generatedInstallerPath);
     if (!generatedInstallerFile.existsSync()) {
       print('Error: Generated installer not found at $generatedInstallerPath');
@@ -167,7 +174,9 @@ void main(List<String> arguments) async {
 
     final targetInstallerPath = path.join('dist', '$outputBaseName.exe');
     generatedInstallerFile.renameSync(targetInstallerPath);
-    print('Successfully generated and moved installer to: $targetInstallerPath');
+    print(
+      'Successfully generated and moved installer to: $targetInstallerPath',
+    );
   } else {
     if (tempIssFile.existsSync()) {
       tempIssFile.deleteSync();
@@ -204,12 +213,18 @@ void main(List<String> arguments) async {
 
     print('Creating portable zip: $targetPortableZipPath');
     try {
-      final zipFileEncoder = ZipFileEncoder();
-      await zipFileEncoder.zipDirectory(
-        Directory(sourceDir),
-        filename: targetPortableZipPath,
-        followLinks: true,
-      );
+      final zipFileEncoder = ZipFileEncoder()..create(targetPortableZipPath);
+      final rootName = makeConfig['display_name'] ?? 'Ckbox';
+      final entries = Directory(
+        sourceDir,
+      ).listSync(recursive: true, followLinks: true);
+      for (final entry in entries.whereType<File>()) {
+        final relative = path
+            .relative(entry.path, from: sourceDir)
+            .replaceAll(r'\', '/');
+        await zipFileEncoder.addFile(entry, '$rootName/$relative');
+      }
+      await zipFileEncoder.close();
       print('Successfully generated portable zip: $targetPortableZipPath');
     } finally {
       if (portableDir.existsSync()) {

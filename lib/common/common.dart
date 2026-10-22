@@ -50,3 +50,5 @@ export 'panel_account_store.dart';
 export 'panel_account_linker.dart';
 export 'panel_account_sync.dart';
 export 'panel_quota_guard.dart';
+export 'speed_test_store.dart';
+export 'tool_history_store.dart';

@@ -1,13 +1,15 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal
 title Ckbox Portable Cleanup Tool
 
 cd /d "%~dp0"
+set "APP_DIR=%~dp0"
+set "CLEAN_SCRIPT=%~f0"
 
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo Requesting Administrator privileges...
-    powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell -NoProfile -Command "Start-Process -FilePath $env:CLEAN_SCRIPT -Verb RunAs"
     exit /b
 )
 
@@ -15,16 +17,18 @@ echo ========================================================
 echo             Ckbox Portable Cleanup Tool
 echo ========================================================
 echo.
-echo This tool will perform the following cleanup actions:
-echo  1. Terminate running Ckbox processes
-echo  2. Stop and delete CkboxHelperService system service
-echo  3. Delete Ckbox scheduled startup tasks
-echo  4. Reset Windows system proxy settings
-echo  5. Remove leftover Wintun network adapters
-echo  6. Clean up application registry entries
+echo Only items that belong to this folder will be cleaned:
+echo   %APP_DIR%
+echo.
+echo  1. Terminate Ckbox processes started from this folder
+echo  2. Remove helper services installed from this folder
+echo  3. Remove scheduled startup tasks pointing to this folder
+echo  4. Remove URL protocol handlers pointing to this folder
+echo  5. Reset the system proxy if it points to localhost
+echo  6. Remove leftover Wintun adapters when no other Ckbox is running
 echo.
 set /p CONFIRM="Are you sure you want to clean up system traces? (Y/N): "
-if /i not "!CONFIRM!"=="Y" (
+if /i not "%CONFIRM%"=="Y" (
     echo.
     echo Operation cancelled by user.
     pause
@@ -35,44 +39,32 @@ echo.
 set /p CLEAN_DATA="Do you also want to delete the portable data folder? (Y/N): "
 echo.
 
-echo [1/6] Terminating running processes...
-taskkill /f /im Ckbox.exe >nul 2>&1
-taskkill /f /im CkboxDev.exe >nul 2>&1
-taskkill /f /im CkboxCore.exe >nul 2>&1
-taskkill /f /im CkboxDevCore.exe >nul 2>&1
-taskkill /f /im CkboxHelperService.exe >nul 2>&1
-taskkill /f /im CkboxDevHelperService.exe >nul 2>&1
+echo [1/6] Cleaning helper services...
+powershell -NoProfile -Command "$d = $env:APP_DIR; Get-CimInstance Win32_Service -ErrorAction SilentlyContinue | Where-Object { $_.PathName -and $_.PathName.Trim().Trim([char]34).StartsWith($d, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { Stop-Service -Name $_.Name -Force -ErrorAction SilentlyContinue; sc.exe delete $_.Name | Out-Null }" >nul 2>&1
 
-echo [2/6] Cleaning system services...
-sc stop CkboxHelperService >nul 2>&1
-sc delete CkboxHelperService >nul 2>&1
-sc stop CkboxDevHelperService >nul 2>&1
-sc delete CkboxDevHelperService >nul 2>&1
+echo [2/6] Terminating running processes...
+powershell -NoProfile -Command "$d = $env:APP_DIR; Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($d, [StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force -ErrorAction SilentlyContinue" >nul 2>&1
 
 echo [3/6] Cleaning scheduled tasks...
-schtasks /Delete /TN "Ckbox" /F >nul 2>&1
-schtasks /Delete /TN "Ckbox Dev" /F >nul 2>&1
+powershell -NoProfile -Command "$d = $env:APP_DIR; Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { @($_.Actions | Where-Object { $_.Execute -and $_.Execute.Trim().Trim([char]34).StartsWith($d, [StringComparison]::OrdinalIgnoreCase) }).Count -gt 0 } | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue" >nul 2>&1
 
-echo [4/6] Resetting system proxy settings...
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f >nul 2>&1
-reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyServer /f >nul 2>&1
-reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v AutoConfigURL /f >nul 2>&1
+echo [4/6] Cleaning URL protocol handlers...
+powershell -NoProfile -Command "$d = $env:APP_DIR; foreach ($s in 'clash','clashmeta','flclash') { $k = 'HKCU:\Software\Classes\' + $s; $c = (Get-ItemProperty -Path ($k + '\shell\open\command') -ErrorAction SilentlyContinue).'(default)'; if ($c -and $c.Trim().Trim([char]34).StartsWith($d, [StringComparison]::OrdinalIgnoreCase)) { Remove-Item -Path $k -Recurse -Force -ErrorAction SilentlyContinue } }" >nul 2>&1
 
-echo [5/6] Cleaning virtual network adapters...
-powershell -NoProfile -Command "Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.InterfaceDescription -like '*Ckbox*' -or $_.Name -like '*Ckbox*' } | ForEach-Object { Disable-NetAdapter $_ -Confirm:$false -ErrorAction SilentlyContinue; Remove-NetAdapter $_ -Confirm:$false -ErrorAction SilentlyContinue }" >nul 2>&1
+echo [5/6] Checking system proxy settings...
+powershell -NoProfile -Command "$k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; $p = Get-ItemProperty -Path $k -ErrorAction SilentlyContinue; if ($p.ProxyEnable -eq 1 -and $p.ProxyServer -and ($p.ProxyServer.StartsWith('127.0.0.1') -or $p.ProxyServer.StartsWith('localhost'))) { Set-ItemProperty -Path $k -Name ProxyEnable -Value 0; Remove-ItemProperty -Path $k -Name ProxyServer -ErrorAction SilentlyContinue }" >nul 2>&1
 
-echo [6/6] Cleaning registry entries...
-reg delete "HKCU\Software\com.ckbox.app" /f >nul 2>&1
-reg delete "HKCU\Software\com.ckbox\Ckbox" /f >nul 2>&1
-reg delete "HKCU\Software\Ckbox" /f >nul 2>&1
-reg delete "HKCU\Software\CkboxDev" /f >nul 2>&1
+echo [6/6] Cleaning virtual network adapters...
+powershell -NoProfile -Command "if (@(Get-Process -Name 'CkboxCore','CkboxDevCore' -ErrorAction SilentlyContinue).Count -eq 0) { Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.InterfaceDescription -like '*Ckbox*' -or $_.Name -like '*Ckbox*' } | ForEach-Object { Disable-NetAdapter -Name $_.Name -Confirm:$false -ErrorAction SilentlyContinue; Remove-NetAdapter -Name $_.Name -Confirm:$false -ErrorAction SilentlyContinue } }" >nul 2>&1
 
-if /i "!CLEAN_DATA!"=="Y" (
+if /i "%CLEAN_DATA%"=="Y" (
     echo.
     echo Cleaning portable data folder...
     if exist "portable" (
         rd /s /q "portable" >nul 2>&1
     )
+    mkdir "portable" >nul 2>&1
+    type nul > "portable\.keep"
 )
 
 echo.
