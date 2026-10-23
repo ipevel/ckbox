@@ -39,16 +39,6 @@ class AboutView extends StatelessWidget {
         onTap: () => _checkUpdate(context),
       ),
       _LinkTile(
-        title: 'Telegram Group',
-        icon: Icons.forum_outlined,
-        onTap: () => globalState.openUrl('https://telegram.me/ckbox_chat'),
-      ),
-      _LinkTile(
-        title: 'Channel',
-        icon: Icons.campaign_outlined,
-        onTap: () => globalState.openUrl('https://telegram.me/ckbox_channel'),
-      ),
-      _LinkTile(
         prefix: 'License',
         title: 'GPL-3.0',
         icon: Icons.gavel,
