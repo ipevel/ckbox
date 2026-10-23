@@ -165,17 +165,7 @@ class _PanelAccountsViewState extends ConsumerState<PanelAccountsView> {
     }
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _addPanel,
-              icon: const Icon(Icons.add),
-              label: const Text('添加面板'),
-            ),
-          ),
-        ),
+        _buildHeader(context),
         ..._buildWarnings(context),
         Expanded(
           child: _accounts.isEmpty ? _buildEmpty() : _buildList(),
@@ -184,47 +174,103 @@ class _PanelAccountsViewState extends ConsumerState<PanelAccountsView> {
     );
   }
 
+  /// 顶部概览：账号数量 + 当前账号 + 添加入口。
+  Widget _buildHeader(BuildContext context) {
+    final scheme = context.colorScheme;
+    PanelAccount? active;
+    for (final account in _accounts) {
+      if (account.isActive) active = account;
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '共 ${_accounts.length} 个账号',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                if (active != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '当前使用 ${active.email}',
+                    style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: _addPanel,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('添加面板'),
+            style: FilledButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 额度/到期告警横幅。
   List<Widget> _buildWarnings(BuildContext context) {
     final warnings = PanelQuotaGuard.checkAll(_accounts);
     if (warnings.isEmpty) return const [];
-    final scheme = Theme.of(context).colorScheme;
+    final scheme = context.colorScheme;
     return [
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
           decoration: BoxDecoration(
-            color: scheme.errorContainer,
-            borderRadius: BorderRadius.circular(8),
+            color: scheme.errorContainer.withValues(alpha: 0.45),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: scheme.error.withValues(alpha: 0.25)),
           ),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded,
-                      size: 18, color: scheme.onErrorContainer),
-                  const SizedBox(width: 6),
-                  Text(
-                    '账号提醒',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: scheme.onErrorContainer,
-                    ),
-                  ),
-                ],
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 18,
+                color: scheme.onErrorContainer,
               ),
-              const SizedBox(height: 4),
-              for (final warning in warnings)
-                Text(
-                  warning.message,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onErrorContainer,
-                  ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '账号提醒',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onErrorContainer,
+                      ),
+                    ),
+                    for (final warning in warnings)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          warning.message,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),
@@ -233,23 +279,52 @@ class _PanelAccountsViewState extends ConsumerState<PanelAccountsView> {
   }
 
   Widget _buildEmpty() {
+    final scheme = context.colorScheme;
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_off_outlined, size: 48),
-          const SizedBox(height: 12),
-          const Text('还没有面板账号'),
-          const SizedBox(height: 4),
-          const Text('点上方「添加面板」登录', style: TextStyle(fontSize: 12)),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_outlined,
+                size: 32,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '还没有面板账号',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '登录面板后，订阅可自动跟随账号刷新，额度与到期时间也会同步显示。',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _addPanel,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('添加面板'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildList() {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
       itemCount: _accounts.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -258,7 +333,7 @@ class _PanelAccountsViewState extends ConsumerState<PanelAccountsView> {
           account: account,
           busy: _busyId == account.id,
           boundCount: PanelAccountLinker.profilesOf(account).length,
-          warning: PanelQuotaGuard.check(account) != null,
+          warning: PanelQuotaGuard.check(account),
           onTap: () => _openDetail(account),
           onRefresh: () => _refresh(account),
           onSwitch: () => _switchTo(account),
@@ -274,7 +349,7 @@ class _AccountCard extends StatelessWidget {
   final PanelAccount account;
   final bool busy;
   final int boundCount;
-  final bool warning;
+  final PanelQuotaWarning? warning;
   final VoidCallback onTap;
   final VoidCallback onRefresh;
   final VoidCallback onSwitch;
@@ -305,124 +380,390 @@ class _AccountCard extends StatelessWidget {
     return '$bytes B';
   }
 
-  static String _formatExpire(int? expireAt) {
-    if (expireAt == null) return '长期有效';
-    final dt = DateTime.fromMillisecondsSinceEpoch(expireAt * 1000);
-    final mm = dt.month.toString().padLeft(2, '0');
-    final dd = dt.day.toString().padLeft(2, '0');
-    return '${dt.year}-$mm-$dd';
+  DateTime? get _expireTime {
+    final expireAt = account.expireAt;
+    if (expireAt == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(expireAt * 1000);
   }
 
-  Widget _badge(BuildContext context, String text, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(right: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 11, color: color),
-      ),
+  int? get _daysLeft {
+    final expire = _expireTime;
+    if (expire == null) return null;
+    return expire.difference(DateTime.now()).inDays;
+  }
+
+  String _formatExpire() {
+    final expire = _expireTime;
+    if (expire == null) return '长期有效';
+    final mm = expire.month.toString().padLeft(2, '0');
+    final dd = expire.day.toString().padLeft(2, '0');
+    final days = _daysLeft ?? 0;
+    final date = '${expire.year}-$mm-$dd';
+    if (days < 0) return '$date（已过期）';
+    return '$date（剩 $days 天）';
+  }
+
+  /// 告警标签：按告警原因给出对应文案与配色。
+  Widget _warningPill(ColorScheme scheme) {
+    final quotaWarning = warning!;
+    final daysLeft = quotaWarning.daysLeft;
+    if (daysLeft != null && daysLeft <= 0) {
+      return _StatusPill(
+        label: '已到期',
+        color: scheme.error,
+        icon: Icons.event_busy,
+      );
+    }
+    if (daysLeft != null && daysLeft < 7) {
+      return _StatusPill(
+        label: '即将到期',
+        color: scheme.tertiary,
+        icon: Icons.schedule,
+      );
+    }
+    return _StatusPill(
+      label: '额度告急',
+      color: scheme.tertiary,
+      icon: Icons.warning_amber_rounded,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+    final scheme = context.colorScheme;
+    final total = account.totalTraffic;
+    final used = account.usedTraffic;
+    final hasQuota = total != null && total > 0;
+    final ratio = hasQuota ? (used / total).clamp(0.0, 1.0).toDouble() : 0.0;
+    final percent = ratio * 100;
+    final quotaColor = percent >= 80
+        ? scheme.error
+        : percent >= 60
+            ? scheme.tertiary
+            : scheme.primary;
+
+    final daysLeft = _daysLeft;
+    final expireColor = daysLeft == null
+        ? null
+        : daysLeft < 0
+            ? scheme.error
+            : daysLeft < 7
+                ? scheme.tertiary
+                : null;
+
+    return CommonCard(
+      isSelected: account.isActive,
+      onPressed: onTap,
+      child: SizedBox(
+        width: double.infinity,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.account_circle_outlined, size: 40),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _AccountAvatar(email: account.email),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            account.email,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                account.email,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            if (account.isActive)
+                              _StatusPill(
+                                label: '当前',
+                                color: scheme.primary,
+                                icon: Icons.check,
+                              ),
+                            if (account.needsRelogin)
+                              _StatusPill(
+                                label: '需重新登录',
+                                color: scheme.error,
+                                icon: Icons.error_outline,
+                              ),
+                            if (warning != null && !account.needsRelogin)
+                              _warningPill(scheme),
+                          ],
                         ),
-                        if (account.isActive)
-                          _badge(context, '当前', scheme.primary),
-                        if (account.needsRelogin)
-                          _badge(context, '需重新登录', scheme.error),
-                        if (warning && !account.needsRelogin)
-                          _badge(context, '额度告急', scheme.error),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.link,
+                              size: 13,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                account.panelUrl,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      account.panelUrl,
-                      style: TextStyle(fontSize: 12, color: scheme.outline),
-                      overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              if (hasQuota) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: ratio,
+                    minHeight: 6,
+                    color: quotaColor,
+                    backgroundColor: scheme.surfaceContainerHighest,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '已用 ${_formatBytes(used)} / ${_formatBytes(total)}',
+                        style: TextStyle(fontSize: 12, color: quotaColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(height: 6),
                     Text(
-                      '流量 ${_formatBytes(account.usedTraffic)} / '
-                      '${_formatBytes(account.totalTraffic)}'
-                      ' · 到期 ${_formatExpire(account.expireAt)}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      boundCount > 0 ? '已导入 $boundCount 个订阅' : '尚未导入订阅',
-                      style: TextStyle(fontSize: 12, color: scheme.outline),
+                      '${percent.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: quotaColor,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              if (busy)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                const SizedBox(height: 10),
+              ] else ...[
+                _MetaItem(
+                  icon: Icons.data_usage,
+                  text: '已用 ${_formatBytes(used)}',
+                ),
+                const SizedBox(height: 10),
+              ],
+              Wrap(
+                spacing: 14,
+                runSpacing: 6,
+                children: [
+                  _MetaItem(
+                    icon: Icons.schedule,
+                    text: _formatExpire(),
+                    color: expireColor,
                   ),
-                )
-              else ...[
-                if (account.needsRelogin)
-                  IconButton(
-                    onPressed: onRelogin,
-                    icon: const Icon(Icons.login),
-                    tooltip: '重新登录',
-                  )
-                else ...[
-                  if (!account.isActive)
-                    IconButton(
-                      onPressed: onSwitch,
-                      icon: const Icon(Icons.swap_horiz),
-                      tooltip: '切换到此账号',
-                    ),
-                  IconButton(
-                    onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh),
-                    tooltip: '刷新订阅信息',
+                  _MetaItem(
+                    icon: Icons.rss_feed,
+                    text: boundCount > 0 ? '$boundCount 个订阅' : '未导入订阅',
                   ),
                 ],
-                IconButton(
-                  onPressed: onRemove,
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: '删除账号',
-                ),
-              ],
+              ),
+              const SizedBox(height: 10),
+              Divider(
+                height: 1,
+                color: scheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 4),
+              _buildActions(scheme),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildActions(ColorScheme scheme) {
+    if (busy) {
+      return const SizedBox(
+        height: 40,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Text('处理中…', style: TextStyle(fontSize: 12)),
+          ],
+        ),
+      );
+    }
+    return SizedBox(
+      height: 40,
+      child: Row(
+        children: [
+          if (account.needsRelogin)
+            FilledButton.tonalIcon(
+              onPressed: onRelogin,
+              icon: const Icon(Icons.login, size: 16),
+              label: const Text('重新登录'),
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            )
+          else if (!account.isActive)
+            FilledButton.tonalIcon(
+              onPressed: onSwitch,
+              icon: const Icon(Icons.swap_horiz, size: 16),
+              label: const Text('切换到此'),
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            )
+          else
+            _StatusPill(
+              label: '当前使用中',
+              color: scheme.primary,
+              icon: Icons.check_circle_outline,
+            ),
+          const Spacer(),
+          if (!account.needsRelogin)
+            IconButton(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh),
+              tooltip: '刷新订阅信息',
+              iconSize: 20,
+              visualDensity: VisualDensity.compact,
+            ),
+          IconButton(
+            onPressed: onRemove,
+            icon: const Icon(Icons.delete_outline),
+            tooltip: '删除账号',
+            iconSize: 20,
+            visualDensity: VisualDensity.compact,
+            color: scheme.error,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 账号头像：取邮箱首字母，配色按邮箱哈希在三套容器色间轮转。
+class _AccountAvatar extends StatelessWidget {
+  final String email;
+
+  const _AccountAvatar({required this.email});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    var hash = 0;
+    for (final unit in email.codeUnits) {
+      hash = (hash * 31 + unit) & 0x7fffffff;
+    }
+    final index = hash % 3;
+    final backgrounds = [
+      scheme.primaryContainer,
+      scheme.secondaryContainer,
+      scheme.tertiaryContainer,
+    ];
+    final foregrounds = [
+      scheme.onPrimaryContainer,
+      scheme.onSecondaryContainer,
+      scheme.onTertiaryContainer,
+    ];
+    final letter = email.isEmpty ? '?' : email[0].toUpperCase();
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: backgrounds[index],
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: foregrounds[index],
+        ),
+      ),
+    );
+  }
+}
+
+/// 状态标签。
+class _StatusPill extends StatelessWidget {
+  final String label;
+  final Color color;
+  final IconData icon;
+
+  const _StatusPill({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 图标 + 文本的次要信息项。
+class _MetaItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color? color;
+
+  const _MetaItem({required this.icon, required this.text, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final foreground = color ?? scheme.onSurfaceVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: foreground),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 12, color: foreground)),
+      ],
     );
   }
 }
