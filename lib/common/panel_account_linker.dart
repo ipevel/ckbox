@@ -5,7 +5,7 @@ import '../models/models.dart';
 /// 面板账号与订阅（Profile）之间的关联。
 ///
 /// 关联按 subscribeUrl 派生、不额外落库：订阅 URL 本身就是账号与订阅之间的契约。
-/// 这样既不用给上游 Profile 模型加字段，也不会因订阅被删而留下脏 id。
+/// 这样既不用给 Profile 模型加字段，也不会因订阅被删而留下脏 id。
 class PanelAccountLinker {
   const PanelAccountLinker._();
 
