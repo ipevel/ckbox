@@ -674,7 +674,7 @@ enum DelayAnimationType {
 enum MrsRawSource {
   ckboxRulesets(
     'clash-rulesets',
-    'https://raw.githubusercontent.com/ipevel/clash-rulesets/mrs/',
+    'https://raw.githubusercontent.com/ipevel/cboard-rulesets/mrs/',
   ),
   metaRulesDat(
     'meta-rules-dat',

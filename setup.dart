@@ -356,17 +356,17 @@ class Build {
   static const List<AssetDownloadItem> assetDownloadItems = [
     AssetDownloadItem(
       url:
-          'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geosite.dat',
+          'https://cdn.jsdelivr.net/gh/ipevel/cboard-rulesets@main/dist/geo/geosite.dat',
       fileName: 'GeoSite.dat',
     ),
     AssetDownloadItem(
       url:
-          'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/geoip.metadb',
+          'https://cdn.jsdelivr.net/gh/ipevel/cboard-rulesets@main/dist/geo/geoip.metadb',
       fileName: 'geoip.metadb',
     ),
     AssetDownloadItem(
       url:
-          'https://cdn.jsdelivr.net/gh/ipevel/polaris-rules@main/dist/geo/ASN.mmdb',
+          'https://cdn.jsdelivr.net/gh/ipevel/cboard-rulesets@main/dist/geo/ASN.mmdb',
       fileName: 'ASN.mmdb',
     ),
     AssetDownloadItem(

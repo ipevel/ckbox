@@ -74,7 +74,7 @@ void main() {
   testWidgets('开启后复制 GitHub Raw 链接', (tester) async {
     expect(
       await _tapAndCopy(tester, true),
-      'https://raw.githubusercontent.com/ipevel/clash-rulesets/mrs/geo/geosite/telegram.mrs',
+      'https://raw.githubusercontent.com/ipevel/cboard-rulesets/mrs/geo/geosite/telegram.mrs',
     );
   });
 
