@@ -1,0 +1,21 @@
+display_name: Ckbox
+
+icon: ./assets/images/icon.png
+
+keywords:
+  - Ckbox
+  - Clash
+  - ClashMeta
+  - Proxy
+
+generic_name: Ckbox
+
+categories:
+  - Network
+
+startup_notify: true
+startup_wm_class: com.ckbox.app
+
+include: []
+extra_files:
+  linux/packaging/polkit/90-ckbox.rules: 90-ckbox.rules

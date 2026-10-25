@@ -1,0 +1,42 @@
+display_name: Ckbox
+package_name: Ckbox
+maintainer:
+  name: ipevel
+  email: ipevel@gmail.com
+
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: ./assets/images/icon.png
+
+dependencies:
+  - libayatana-appindicator3-dev
+  - libkeybinder-3.0-dev
+  - libcap2-bin
+
+keywords:
+  - Ckbox
+  - Clash
+  - ClashMeta
+  - Mihomo
+  - Proxy
+
+generic_name: Ckbox
+
+categories:
+  - Network
+
+startup_notify: true
+startup_wm_class: com.ckbox.app
+
+extra_files:
+  linux/packaging/polkit/90-ckbox.rules: usr/share/polkit-1/rules.d/90-ckbox.rules
+
+postinstall_scripts:
+  - |
+    CORE_PATH="/usr/share/Ckbox/CkboxCore"
+    if [ -f "$CORE_PATH" ]; then
+      setcap 'cap_net_admin,cap_net_bind_service,cap_net_raw=+ep' "$CORE_PATH" && sync
+    fi
+    rm -f /etc/polkit-1/rules.d/90-ckbox.rules /etc/polkit-1/rules.d/99-ckbox.rules /usr/share/polkit-1/rules.d/99-ckbox.rules
