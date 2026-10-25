@@ -94,9 +94,9 @@ _AppSettingProps _$AppSettingPropsFromJson(
       $enumDecodeNullable(
         _$MrsRawSourceEnumMap,
         json['mrsRawSource'],
-        unknownValue: MrsRawSource.bettRules,
+        unknownValue: MrsRawSource.ckboxRulesets,
       ) ??
-      MrsRawSource.bettRules,
+      MrsRawSource.ckboxRulesets,
   mrsResolveDns: json['mrsResolveDns'] as bool? ?? true,
   iperfOptions: json['iperfOptions'] == null
       ? const IperfOptions()
@@ -200,7 +200,7 @@ const _$SidebarFlyoutDelayEnumMap = {
 };
 
 const _$MrsRawSourceEnumMap = {
-  MrsRawSource.bettRules: 'bettRules',
+  MrsRawSource.ckboxRulesets: 'ckboxRulesets',
   MrsRawSource.metaRulesDat: 'metaRulesDat',
 };
 

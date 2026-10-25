@@ -24,7 +24,7 @@ const _result = MrsLookupResult(
 Future<String?> _tapAndCopy(
   WidgetTester tester,
   bool copyRaw, {
-  MrsRawSource source = MrsRawSource.bettRules,
+  MrsRawSource source = MrsRawSource.ckboxRulesets,
 }) async {
   String? copied;
   tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
