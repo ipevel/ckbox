@@ -9,6 +9,8 @@
 
 **常用平台：Android arm64-v8a、Windows amd64、macOS arm64、Linux amd64。** 桌面端 2012 年及更早的 CPU 请选 Compatible 兼容版。
 
+> macOS 请按芯片选择安装包：Apple 芯片选 ARM64，Intel 芯片选 x64。
+>
 > Windows 与 macOS 产物未做代码签名，首次运行可能被 SmartScreen、智能应用控制或 Gatekeeper 拦截，需手动允许后运行。macOS 若提示「已损坏」可执行 `xattr -dr com.apple.quarantine /Applications/Ckbox.app`。
 >
 > Linux 的 AppImage 需 `chmod +x` 后运行；deb/rpm 安装时会为内核设置所需 capability。
