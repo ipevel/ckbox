@@ -673,8 +673,8 @@ enum DelayAnimationType {
 
 enum MrsRawSource {
   bettRules(
-    'bett-rules',
-    'https://raw.githubusercontent.com/appshubcc/bett-rules/meta/',
+    'clash-rulesets',
+    'https://raw.githubusercontent.com/ipevel/clash-rulesets/mrs/',
   ),
   metaRulesDat(
     'meta-rules-dat',
