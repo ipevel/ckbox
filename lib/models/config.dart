@@ -232,8 +232,8 @@ abstract class AppSettingProps with _$AppSettingProps {
     String? dashboardTitle,
     @Default(<String>[]) List<String> toolboxTiles,
     @Default(false) bool mrsCopyRawLink,
-    @JsonKey(unknownEnumValue: MrsRawSource.bettRules)
-    @Default(MrsRawSource.bettRules)
+    @JsonKey(unknownEnumValue: MrsRawSource.ckboxRulesets)
+    @Default(MrsRawSource.ckboxRulesets)
     MrsRawSource mrsRawSource,
     @Default(true) bool mrsResolveDns,
     @Default(IperfOptions()) IperfOptions iperfOptions,
