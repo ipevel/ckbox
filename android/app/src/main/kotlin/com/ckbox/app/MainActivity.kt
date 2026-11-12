@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.HapticFeedbackConstants
@@ -14,6 +15,7 @@ import com.ckbox.app.plugins.AppPlugin
 import com.ckbox.app.plugins.ServicePlugin
 import com.ckbox.app.plugins.TilePlugin
 import com.ckbox.app.plugins.VpnPlugin
+import com.ckbox.app.widget.HomeWidgets
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineGroup
@@ -45,6 +47,13 @@ class MainActivity : FlutterActivity() {
             installSplashScreen()
         }
         super.onCreate(savedInstanceState)
+        HomeWidgets.handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        HomeWidgets.handleIntent(intent)
     }
 
     override fun onResume() {

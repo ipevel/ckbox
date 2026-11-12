@@ -10,6 +10,7 @@ import com.ckbox.app.plugins.ServicePlugin
 import com.ckbox.app.plugins.TilePlugin
 import com.ckbox.app.plugins.VpnPlugin
 import com.ckbox.app.services.CkboxTileService
+import com.ckbox.app.widget.HomeWidgets
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -66,6 +67,9 @@ object GlobalState {
     var isSmartStopped = false
 
     @Volatile
+    var smartStopOverride = false
+
+    @Volatile
     var isStopping = false
 
     @Volatile
@@ -99,6 +103,7 @@ object GlobalState {
         currentRunState = newState
         _runState.value = newState
         requestTileUpdate()
+        mainHandler.post { HomeWidgets.refreshAll(CkboxApplication.getAppContext()) }
     }
 
     private val tileRetryRunnable = Runnable {
@@ -276,6 +281,12 @@ object GlobalState {
     }
 
     fun isServiceEngineRunning(): Boolean = serviceEngine != null
+
+    fun notifyLowMemory() {
+        runCatching {
+            (flutterEngine ?: serviceEngine)?.dartExecutor?.notifyLowMemoryWarning()
+        }
+    }
 
     fun reconnectIpc() {
         (serviceEngine?.plugins?.get(TilePlugin::class.java) as? TilePlugin)?.handleReconnectIpc()

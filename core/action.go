@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"core/toolbox"
 
@@ -23,9 +25,74 @@ type ActionResult struct {
 	Port   int64
 }
 
+type actionResultHeader struct {
+	Id     string `json:"id"`
+	Method Method `json:"method"`
+	Code   int    `json:"code"`
+	Raw    bool   `json:"raw,omitempty"`
+}
+
+// jsonString 对包含非法 UTF-8 字节的字符串做确定性转义：
+// 非法字节统一输出为 \ufffd 转义序列，避免不同 Go 版本的 encoding/json
+// 直接写出 U+FFFD 字面量导致帧内容与客户端解析约定不一致。
+type jsonString string
+
+func (s jsonString) MarshalJSON() ([]byte, error) {
+	var b strings.Builder
+	b.WriteByte('"')
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(string(s)[i:])
+		if r == utf8.RuneError && size == 1 {
+			b.WriteString(`\ufffd`)
+			i++
+			continue
+		}
+		chunk, err := json.Marshal(string(r))
+		if err != nil {
+			return nil, err
+		}
+		b.Write(chunk[1 : len(chunk)-1])
+		i += size
+	}
+	b.WriteByte('"')
+	return []byte(b.String()), nil
+}
+
 func (result ActionResult) Json() ([]byte, error) {
-	data, err := json.Marshal(result)
-	return data, err
+	data := result.Data
+	if err, ok := data.(error); ok {
+		data = err.Error()
+	}
+	text, raw := data.(string)
+	raw = raw && utf8.ValidString(text) && strings.IndexByte(text, 0) < 0
+	var payload []byte
+	if !raw {
+		var err error
+		if s, ok := data.(string); ok && !utf8.ValidString(s) {
+			payload, err = json.Marshal(jsonString(s))
+		} else {
+			payload, err = json.Marshal(data)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	header, err := json.Marshal(actionResultHeader{
+		Id:     result.Id,
+		Method: result.Method,
+		Code:   result.Code,
+		Raw:    raw,
+	})
+	if err != nil {
+		return nil, err
+	}
+	frame := make([]byte, 0, len(header)+1+len(text)+len(payload))
+	frame = append(frame, header...)
+	frame = append(frame, '\n')
+	if raw {
+		return append(frame, text...), nil
+	}
+	return append(frame, payload...), nil
 }
 
 func (result ActionResult) success(data interface{}) {
@@ -55,15 +122,17 @@ func handleAction(action *Action, result ActionResult) {
 		result.success(handleGetIsInit())
 		return
 	case forceGcMethod:
-		var forceFreeOSMemory bool
+		var forceFreeOSMemory, purge bool
 		if action.Data != nil {
 			if strVal, ok := action.Data.(string); ok {
-				forceFreeOSMemory = (strVal == "true")
+				forceFreeOSMemory = strVal == "true" || strVal == "free"
+				purge = strVal == "true"
 			} else if boolVal, ok := action.Data.(bool); ok {
 				forceFreeOSMemory = boolVal
+				purge = boolVal
 			}
 		}
-		handleForceGc(forceFreeOSMemory)
+		handleForceGc(forceFreeOSMemory, purge)
 		result.success(true)
 		return
 	case shutdownMethod:
@@ -77,6 +146,14 @@ func handleAction(action *Action, result ActionResult) {
 			params.Data = paramsString
 		}
 		result.success(handleValidateConfig(&params))
+		return
+	case importProfileMethod:
+		var params ImportProfileParams
+		if err := json.Unmarshal([]byte(action.Data.(string)), &params); err != nil {
+			result.success(err.Error())
+			return
+		}
+		result.success(handleImportProfile(&params))
 		return
 	case decryptAgeConfigMethod:
 		paramsString := action.Data.(string)
@@ -110,8 +187,8 @@ func handleAction(action *Action, result ActionResult) {
 	case getTrafficMethod:
 		result.success(handleGetTraffic())
 		return
-	case getTotalTrafficMethod:
-		result.success(handleGetTotalTraffic())
+	case getTrafficSnapshotMethod:
+		result.success(handleGetTrafficSnapshot())
 		return
 	case resetTrafficMethod:
 		handleResetTraffic()
@@ -122,6 +199,16 @@ func handleAction(action *Action, result ActionResult) {
 		handleAsyncTestDelay(data, func(value string) {
 			result.success(value)
 		})
+		return
+	case asyncTestDelaysMethod:
+		handleAsyncTestDelays(action.Data.(string), func(value string) {
+			result.success(value)
+		})
+		return
+	case setForegroundMethod:
+		value, _ := action.Data.(string)
+		handleSetForeground(value == "true")
+		result.success(true)
 		return
 	case startSpeedTestMethod:
 		data := action.Data.(string)
@@ -175,8 +262,29 @@ func handleAction(action *Action, result ActionResult) {
 	case mrsLookupMethod:
 		result.success(toolbox.HandleMrsLookup(action.Data.(string)))
 		return
+	case mrsDumpMethod:
+		result.success(toolbox.HandleMrsDump(action.Data.(string)))
+		return
 	case cancelMrsLookupMethod:
 		result.success(toolbox.HandleCancelMrsLookup())
+		return
+	case getTrafficStatsMethod:
+		result.success(toolbox.HandleGetTrafficStats(action.Data.(string)))
+		return
+	case clearTrafficStatsMethod:
+		result.success(toolbox.HandleClearTrafficStats())
+		return
+	case storeGetMethod:
+		result.success(toolbox.HandleStoreGet(action.Data.(string)))
+		return
+	case storeSetMethod:
+		result.success(toolbox.HandleStoreSet(action.Data.(string)))
+		return
+	case storeListMethod:
+		result.success(toolbox.HandleStoreList(action.Data.(string)))
+		return
+	case storeClearMethod:
+		result.success(toolbox.HandleStoreClear(action.Data.(string)))
 		return
 	case startToolProxyMethod:
 		result.success(toolbox.HandleStartToolProxy())
@@ -190,6 +298,9 @@ func handleAction(action *Action, result ActionResult) {
 		return
 	case getConnectionsMethod:
 		result.success(handleGetConnections())
+		return
+	case getConnectionsSummaryMethod:
+		result.success(handleGetConnectionsSummary())
 		return
 	case closeConnectionsMethod:
 		result.success(handleCloseConnections())
@@ -227,6 +338,19 @@ func handleAction(action *Action, result ActionResult) {
 		}
 		result.success("")
 		return
+	case mergeProfilesMethod:
+		var params MergeProfilesParams
+		if err := json.Unmarshal([]byte(action.Data.(string)), &params); err != nil {
+			result.error(err)
+			return
+		}
+		report, err := handleMergeProfiles(&params)
+		if err != nil {
+			result.error(err)
+			return
+		}
+		result.success(report)
+		return
 	case getRuntimeConfigMethod:
 		params := defaultSetupParams()
 		if err := UnmarshalJson([]byte(action.Data.(string)), params); err != nil {
@@ -257,6 +381,10 @@ func handleAction(action *Action, result ActionResult) {
 	case closeConnectionMethod:
 		id := action.Data.(string)
 		result.success(handleCloseConnection(id))
+		return
+	case closeGroupConnectionsMethod:
+		groupName := action.Data.(string)
+		result.success(handleCloseGroupConnections(groupName))
 		return
 	case getExternalProvidersMethod:
 		result.success(handleGetExternalProviders())

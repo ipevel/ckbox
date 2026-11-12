@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/enum/enum.dart';
 import 'package:ckbox/models/models.dart';
+import 'package:ckbox/pages/toolbox/traffic_stats.dart';
 import 'package:ckbox/providers/providers.dart';
 import 'package:ckbox/state.dart';
 import 'package:ckbox/widgets/widgets.dart';
@@ -108,10 +109,11 @@ class _TrafficUsageState extends ConsumerState<TrafficUsage> {
           ),
         ),
         const SizedBox(width: 8),
-        Flexible(
+        Expanded(
           child: Text(
             v,
             maxLines: 1,
+            textAlign: TextAlign.end,
             overflow: TextOverflow.ellipsis,
             style: context.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
@@ -129,7 +131,7 @@ class _TrafficUsageState extends ConsumerState<TrafficUsage> {
     return SizedBox(
       height: getWidgetHeight(context, size.rows),
       child: CommonCard(
-        onPressed: () {},
+        onPressed: () => BaseNavigator.push(context, const TrafficStatsPage()),
         child: DashboardDecor(
           mark: DashboardDecor.icon(context, Icons.data_saver_off, 80),
           bottom: true,
@@ -220,7 +222,7 @@ class _TrafficUsageState extends ConsumerState<TrafficUsage> {
           label: appLocalizations.trafficUsage,
           iconData: Icons.data_saver_off,
         ),
-        onPressed: () {},
+        onPressed: () => BaseNavigator.push(context, const TrafficStatsPage()),
         child: ValueListenableBuilder<int>(
           valueListenable: dashboardRefreshManager.tick1s,
           builder: (_, _, _) {

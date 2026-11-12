@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:ckbox/clash/clash.dart';
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/models/common.dart';
+import 'package:ckbox/models/config.dart';
 import 'package:ckbox/models/core.dart';
 import 'package:ckbox/models/profile.dart';
 import 'package:ckbox/pages/editor.dart';
@@ -136,7 +137,7 @@ class _ProvidersBodyState extends ConsumerState<ProvidersBody> {
 
     return Builder(
       builder: (context) {
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
+        final bottomPadding = MediaQuery.paddingOf(context).bottom;
         final itemCount = sections.fold<int>(
           0,
           (sum, section) => sum + 1 + section.providers.length,
@@ -211,6 +212,8 @@ class _ProvidersBodyState extends ConsumerState<ProvidersBody> {
   }
 }
 
+const _ageArmorHeader = '-----BEGIN AGE ENCRYPTED FILE-----';
+
 class ProviderItem extends StatelessWidget {
   final ExternalProvider provider;
 
@@ -275,6 +278,16 @@ class ProviderItem extends StatelessWidget {
         }
         if (content.isEmpty) {
           content = await clashCore.parseExternalProviderContent(provider.name);
+        }
+        final ageSecretKey = globalState.config.currentProfile?.ageSecretKey;
+        if (ageSecretKey != null &&
+            ageSecretKey.isNotEmpty &&
+            content.trimLeft().startsWith(_ageArmorHeader)) {
+          final decrypted = await clashCore.decryptAgeConfig(
+            content.trim(),
+            ageSecretKey,
+          );
+          if (decrypted.isNotEmpty) content = decrypted;
         }
         if (!context.mounted) return;
         BaseNavigator.push(

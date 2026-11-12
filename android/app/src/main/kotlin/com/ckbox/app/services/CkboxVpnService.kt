@@ -15,6 +15,7 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.ckbox.app.GlobalState
+import com.ckbox.app.core.Core
 import com.ckbox.app.extensions.getIpv4RouteAddress
 import com.ckbox.app.extensions.getIpv6RouteAddress
 import com.ckbox.app.extensions.toCIDR
@@ -29,6 +30,8 @@ import kotlinx.coroutines.launch
 class CkboxVpnService : VpnService(), BaseServiceInterface {
     companion object {
         private const val TAG = "CkboxVpnService"
+        private val proxyExclusionPattern =
+            Regex("[a-zA-Z0-9*]+(-[a-zA-Z0-9*]+)*(\\.[a-zA-Z0-9*]+(-[a-zA-Z0-9*]+)*)*")
     }
 
     @Volatile
@@ -83,7 +86,10 @@ class CkboxVpnService : VpnService(), BaseServiceInterface {
 
         fairMemoryHelper.register(
             context = this,
-            onTrim = { GlobalState.getCurrentVPNPlugin()?.requestGc() },
+            onTrim = {
+                GlobalState.getCurrentVPNPlugin()?.requestGc()
+                Core.purge(all = true)
+            },
             onKill = { /* system will kill process; service has no extra state to save */ }
         )
     }
@@ -95,8 +101,10 @@ class CkboxVpnService : VpnService(), BaseServiceInterface {
             Log.d("addAddress", "address: ${cidr.address} prefixLength:${cidr.prefixLength}")
             val routes = options.getIpv4RouteAddress()
             if (routes.isNotEmpty()) {
-                runCatching { routes.forEach { addRoute(it.address, it.prefixLength) } }
-                    .onFailure { addRoute("0.0.0.0", 0) }
+                runCatching {
+                    routes.forEach { addRoute(it.address, it.prefixLength) }
+                    if (routes.none { it.address.isAnyLocalAddress }) addRoute("0.0.0.0", 32)
+                }.onFailure { addRoute("0.0.0.0", 0) }
             } else {
                 addRoute("0.0.0.0", 0)
             }
@@ -146,7 +154,8 @@ class CkboxVpnService : VpnService(), BaseServiceInterface {
         if (options.allowBypass) allowBypass()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && options.systemProxy) {
-            setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", options.port, options.bypassDomain))
+            val exclusionList = options.bypassDomain.filter { proxyExclusionPattern.matches(it) }
+            setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", options.port, exclusionList))
         }
 
         val fd = runCatching { establish()?.detachFd() }.getOrElse { e ->
@@ -301,6 +310,8 @@ class CkboxVpnService : VpnService(), BaseServiceInterface {
         super.onTrimMemory(level)
         if (level == 10 || level == 15 || level >= 40) {
             GlobalState.getCurrentVPNPlugin()?.requestGc()
+            GlobalState.notifyLowMemory()
+            Core.purge(all = false)
         }
     }
 

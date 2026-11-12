@@ -26,6 +26,7 @@ final baseInfoEdgeInsets = EdgeInsets.symmetric(
 final defaultTextScaleFactor =
     WidgetsBinding.instance.platformDispatcher.textScaleFactor;
 const httpTimeoutDuration = Duration(milliseconds: 5000);
+const maxDelayTestConcurrency = 100;
 const moreDuration = Duration(milliseconds: 100);
 const animateDuration = Duration(milliseconds: 100);
 const midDuration = Duration(milliseconds: 200);
@@ -42,6 +43,7 @@ const clashConfigKey = 'clash_config';
 const configKey = 'config';
 const customSidebarIconKey = 'custom_sidebar_icon';
 const customDashboardTitleKey = 'custom_dashboard_title';
+const lastManagedScriptVersionKey = 'last_managed_script_version';
 const double dialogCommonWidth = 300;
 const repository = 'ipevel/ckbox';
 const ipInfoToken = String.fromEnvironment('IPINFO_TOKEN', defaultValue: '');
@@ -49,17 +51,16 @@ const defaultExternalController = '127.0.0.1:9090';
 const maxMobileWidth = 600;
 const maxLaptopWidth = 840;
 double getFloatingBottomBarReserveHeight(BuildContext context) {
+  if (globalState.isAndroidTV) return 0;
   final viewBottom = max(
     MediaQuery.viewPaddingOf(context).bottom,
     MediaQuery.paddingOf(context).bottom,
   );
-  if (globalState.isAndroidTV) {
-    return 132.0 + (viewBottom > 12 ? viewBottom - 12 : 0);
-  }
   return 84.0 + (viewBottom > 12 ? viewBottom - 12 : 0);
 }
 
 double getFloatingBottomBarFABReserveHeight(BuildContext context) {
+  if (globalState.isAndroidTV) return 0;
   final viewBottom = max(
     MediaQuery.viewPaddingOf(context).bottom,
     MediaQuery.paddingOf(context).bottom,
@@ -67,7 +68,7 @@ double getFloatingBottomBarFABReserveHeight(BuildContext context) {
   return 84.0 - min(viewBottom, 12.0);
 }
 
-const defaultTestUrl = 'https://www.apple.com/library/test/success.html';
+const defaultTestUrl = 'https://www.gstatic.com/generate_204';
 
 // Preset test URLs
 const presetTestUrls = [
@@ -79,7 +80,7 @@ const presetTestUrls = [
 ];
 
 // Preset NTP servers
-const defaultNtpServer = 'time.apple.com';
+const defaultNtpServer = 'ntp.aliyun.com';
 const presetNtpServers = [
   'ntp.aliyun.com',
   'time.apple.com',
@@ -126,7 +127,7 @@ const profilesStoreKey = PageStorageKey<String>('profiles');
 
 const defaultPrimaryColor = 0xFF00897B;
 
-const maxLength = 512;
+const maxLength = 1024;
 const maxLogLength = 512;
 
 final mainIsolate = 'CkboxMainIsolate';

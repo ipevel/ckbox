@@ -67,6 +67,7 @@ app.*.map.json
 /android/local.properties
 
 /android/core/.cxx
+/android/.kotlin/
 
 #libclash
 /libclash/
@@ -89,3 +90,4 @@ app.*.map.json
 
 # ckbox panel integration local state (never commit credentials)
 /panel_state.json
+/test/private/

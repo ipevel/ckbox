@@ -75,7 +75,9 @@ class _AppStateManagerState extends ConsumerState<AppStateManager>
       }
     });
     ref.listenManual(profilesProvider, (prev, next) {
-      if (prev == null || !next.hasAddedOrChanged(prev)) return;
+      if (prev == null) return;
+      globalState.appController.syncBundles(prev, next);
+      if (!next.hasAddedOrChanged(prev)) return;
       globalState.appController.autoBackupDebounce();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -87,12 +89,11 @@ class _AppStateManagerState extends ConsumerState<AppStateManager>
     if (window == null) {
       return;
     }
-    ref.listenManual(autoSetSystemDnsStateProvider, (prev, next) async {
+    ref.listenManual(systemDnsTakeoverProvider, (prev, next) async {
       if (prev == next) {
         return;
       }
-      final shouldSet = next.a == true && next.b == true;
-      await system.updateDns(!shouldSet);
+      await system.updateDns(!next);
     });
     ref.listenManual(currentBrightnessProvider, (prev, next) {
       if (prev == next) {
@@ -416,6 +417,14 @@ class _SidebarOverlayState extends State<_SidebarOverlay> {
   }
 
   @override
+  void dispose() {
+    _entry
+      ..remove()
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Overlay(initialEntries: [_entry]);
   }
@@ -523,7 +532,7 @@ class AppSidebarContainer extends ConsumerWidget {
         ? 132.0
         : requiredWidth <= 136.0
         ? 148.0
-        : 156.0;
+        : math.max(156.0, (requiredWidth + 8.0).ceilToDouble());
     if (system.isMacOS) return itemsWidth;
     final brandPainter = TextPainter(
       text: TextSpan(

@@ -47,8 +47,17 @@ class AppPath {
         tempDir.complete(value);
       });
     }
-    getDownloadsDirectory().then((value) {
-      downloadDir.complete(value);
+    // getDownloadsDirectory 在非 macOS 桌面端由平台插件提供；缺少插件注册时
+    // 会直接抛出 UnsupportedError，这里兜底为应用目录下的 downloads，避免
+    // AppPath 初始化失败导致文件选择器与图标缓存不可用。
+    Future.sync(getDownloadsDirectory).then((value) {
+      downloadDir.complete(
+        value ?? Directory(join(appDirPath, 'downloads')),
+      );
+    }).catchError((Object _) {
+      if (!downloadDir.isCompleted) {
+        downloadDir.complete(Directory(join(appDirPath, 'downloads')));
+      }
     });
   }
 
@@ -222,11 +231,6 @@ class AppPath {
     return join(directory.path, 'config.json');
   }
 
-  Future<String> get ipCacheFilePath async {
-    final tempDirectory = await tempPath;
-    return join(tempDirectory, 'ip_cache.json');
-  }
-
   Future<String> get speedTestPath async {
     final directory = await dataDir.future;
     return join(directory.path, 'speed_test.json');
@@ -235,6 +239,11 @@ class AppPath {
   Future<String> get toolHistoryPath async {
     final directory = await dataDir.future;
     return join(directory.path, 'toolbox_history.json');
+  }
+
+  Future<String> get iconSetsPath async {
+    final directory = await dataDir.future;
+    return join(directory.path, 'icon_sets.json');
   }
 
   Future<String> get helperAuthKeyPath async {

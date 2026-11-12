@@ -10,7 +10,11 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.os.PowerManager
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.core.content.getSystemService
 import com.ckbox.app.CkboxApplication
@@ -20,6 +24,7 @@ import com.ckbox.app.core.Core
 import com.ckbox.app.extensions.awaitResult
 import com.ckbox.app.extensions.asSocketAddressText
 import com.ckbox.app.extensions.resolveDns
+import com.ckbox.app.extensions.trafficSpeedInfo
 import com.ckbox.app.models.StartForegroundParams
 import com.ckbox.app.models.VpnOptions
 import com.ckbox.app.modules.SuspendModule
@@ -64,10 +69,17 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private val uidPageNameMap = ConcurrentHashMap<Int, String>()
     private var suspendModule: SuspendModule? = null
 
+    private var speedTickerJob: Job? = null
+    private val speedTickerLock = Any()
+
+    private var defaultNetwork: Network? = null
+    private var defaultNetworkTracked = false
     @Volatile
-    private var quickResponseEnabled = false
-    private var quickResponseJob: Job? = null
-    private var lastNetworkType: Int? = null
+    private var defaultNetworkChangedAt = 0L
+    @Volatile
+    private var tunStartedAt = 0L
+    @Volatile
+    private var quickResponseAt = 0L
     private var lastDns = ""
 
     val networks: MutableSet<Network> = Collections.newSetFromMap(ConcurrentHashMap())
@@ -197,14 +209,26 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 result.success(getCurrentDns())
             }
 
-            "setSmartStopped" -> {
-                val value = call.argument<Boolean>("value") ?: false
-                GlobalState.isSmartStopped = value
+            "hasPhysicalNetwork" -> {
+                result.success(getActivePhysicalNetworks().isNotEmpty())
+            }
+
+            "quickResponse" -> {
+                handleQuickResponse()
                 result.success(true)
             }
 
             "isSmartStopped" -> {
                 result.success(GlobalState.isSmartStopped)
+            }
+
+            "isSmartStopOverride" -> {
+                result.success(GlobalState.smartStopOverride)
+            }
+
+            "clearSmartStopOverride" -> {
+                GlobalState.smartStopOverride = false
+                result.success(true)
             }
 
             "smartStop" -> {
@@ -215,11 +239,6 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "smartResume" -> {
                 val data = call.argument<String>("data")
                 result.success(handleSmartResume(Gson().fromJson(data, VpnOptions::class.java)))
-            }
-            
-            "setQuickResponse" -> {
-                quickResponseEnabled = call.argument<Boolean>("enabled") ?: false
-                result.success(true)
             }
 
             "updateNotificationSpeed" -> {
@@ -239,10 +258,6 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
         }
     }
-    
-    fun setQuickResponse(enabled: Boolean) {
-        quickResponseEnabled = enabled
-    }
 
     private fun getActivePhysicalNetworks(): Set<Network> {
         val current = networks
@@ -259,8 +274,15 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         return cm.activeNetwork?.takeIf(isPhysical)?.let { setOf(it) } ?: emptySet()
     }
 
+    private fun getLanNetworks(): List<Network> {
+        val cm = connectivity ?: return emptyList()
+        return getActivePhysicalNetworks().filter { network ->
+            cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == false
+        }
+    }
+
     fun getLocalIpAddresses(): List<String> = runCatching {
-        getActivePhysicalNetworks().flatMap { network ->
+        getLanNetworks().flatMap { network ->
             connectivity?.getLinkProperties(network)
                 ?.linkAddresses
                 ?.mapNotNull { it.address }
@@ -274,7 +296,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     fun getLocalGateways(): List<String> = runCatching {
-        getActivePhysicalNetworks().flatMap { network ->
+        getLanNetworks().flatMap { network ->
             connectivity?.getLinkProperties(network)
                 ?.routes
                 ?.filter { it.isDefaultRoute() }
@@ -370,7 +392,14 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     fun notifyScreenStateChanged(isOn: Boolean) {
+        Core.screenStateChanged(isOn)
         invokeDart("screenStateChanged", isOn)
+        ServicePlugin.notifyScreenStateChanged(isOn)
+        if (isOn) {
+            ensureSpeedTicker()
+        } else {
+            stopSpeedTicker()
+        }
     }
 
     fun getCurrentDns(): String {
@@ -401,7 +430,6 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             networks.add(network)
-            handleNetworkChange()
             invokeDart("networkChanged")
         }
 
@@ -409,7 +437,6 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             networks.remove(network)
             networkDnsMap.remove(network)
             onUpdateNetwork()
-            handleNetworkChange()
             invokeDart("networkChanged")
         }
 
@@ -426,6 +453,16 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
     }.build()
 
+    private val defaultNetworkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            handleDefaultNetworkChanged(network)
+        }
+
+        override fun onLost(network: Network) {
+            if (network == defaultNetwork) defaultNetwork = null
+        }
+    }
+
     private fun registerNetworkCallback() {
         if (!networkCallbackRegistered.compareAndSet(false, true)) return
         runCatching {
@@ -434,11 +471,34 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         }.onFailure {
             networkCallbackRegistered.set(false)
             android.util.Log.e("VpnPlugin", "Failed to register network callback: ${it.message}")
+            return
+        }
+        registerDefaultNetworkCallback()
+    }
+
+    private fun registerDefaultNetworkCallback() {
+        val cm = connectivity ?: return
+        val handler = Handler(Looper.getMainLooper())
+        defaultNetwork = null
+        defaultNetworkTracked = false
+        runCatching {
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+                    cm.registerBestMatchingNetworkCallback(request, defaultNetworkCallback, handler)
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ->
+                    cm.requestNetwork(request, defaultNetworkCallback, handler)
+                else -> cm.registerDefaultNetworkCallback(defaultNetworkCallback, handler)
+            }
+        }.onFailure {
+            android.util.Log.e("VpnPlugin", "Failed to register default network callback: ${it.message}")
         }
     }
 
     private fun unRegisterNetworkCallback() {
         if (!networkCallbackRegistered.compareAndSet(true, false)) return
+        runCatching {
+            connectivity?.unregisterNetworkCallback(defaultNetworkCallback)
+        }
         runCatching {
             connectivity?.unregisterNetworkCallback(callback)
         }.onFailure {
@@ -449,32 +509,27 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             onUpdateNetwork()
         }
     }
-    
-    private fun handleNetworkChange() {
-        val currentNetworkType = getCurrentNetworkType()
-        if (lastNetworkType == null) {
-            lastNetworkType = currentNetworkType
-            return
-        }
 
-        if (currentNetworkType != lastNetworkType) {
-            lastNetworkType = currentNetworkType
+    private fun handleDefaultNetworkChanged(network: Network) {
+        val changed = defaultNetworkTracked && network != defaultNetwork
+        defaultNetwork = network
+        defaultNetworkTracked = true
+        if (!changed) return
 
-            ServicePlugin.notifyNetworkChanged()
-            invokeDart("networkChanged")
-
-            if (!quickResponseEnabled) return
-
-            quickResponseJob?.cancel()
-            quickResponseJob = scope.launch {
-                delay(150)
-                if (GlobalState.currentRunState == RunState.START) {
-                    android.util.Log.d("VpnPlugin", "Quick Response: Network changed, notifying Dart")
-                    ServicePlugin.notifyQuickResponse()
-                }
-            }
-        }
+        defaultNetworkChangedAt = SystemClock.elapsedRealtime()
+        ServicePlugin.notifyNetworkChanged()
+        invokeDart("networkChanged", true)
     }
+
+    private fun handleQuickResponse() {
+        if (GlobalState.currentRunState != RunState.START) return
+        if (defaultNetworkChangedAt <= maxOf(tunStartedAt, quickResponseAt)) return
+        quickResponseAt = SystemClock.elapsedRealtime()
+        android.util.Log.d("VpnPlugin", "Quick Response: Default network changed")
+        scope.launch { Core.onNetworkChanged() }
+    }
+
+    fun requestSmartAutoStopCheck() = invokeDart("networkChanged")
 
     private fun invokeDart(method: String, arguments: Any? = null) {
         if (activeChannels.isEmpty()) return
@@ -490,17 +545,6 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         }
     }
     
-    private fun getCurrentNetworkType(): Int {
-        val activeNetwork = connectivity?.activeNetwork ?: return -1
-        val caps = connectivity?.getNetworkCapabilities(activeNetwork) ?: return -1
-        return when {
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> 1
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> 2
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> 3
-            else -> 0
-        }
-    }
-
     private suspend fun startForeground() {
         val shouldUpdate = GlobalState.runLock.withLock {
             GlobalState.currentRunState == RunState.START || GlobalState.isSmartStopped
@@ -512,6 +556,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         } catch (e: Exception) {
             android.util.Log.e("VpnPlugin", "startForeground error: ${e.message}")
         }
+        ensureSpeedTicker()
     }
 
     fun updateNotificationIcon() {
@@ -537,12 +582,48 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             GlobalState.isSpeedNotificationEnabled = true
         }
         updateNotificationSpeed(profileName, speedInfo)
+        ensureSpeedTicker()
+    }
+
+    private fun isInteractive(): Boolean =
+        CkboxApplication.getAppContext().getSystemService<PowerManager>()?.isInteractive != false
+
+    private fun ensureSpeedTicker() {
+        synchronized(speedTickerLock) {
+            if (!GlobalState.isSpeedNotificationEnabled) return
+            if (speedTickerJob?.isActive == true) return
+            speedTickerJob = scope.launch {
+                while (isActive) {
+                    delay(1000)
+                    if (!GlobalState.isSpeedNotificationEnabled ||
+                        GlobalState.currentRunState != RunState.START ||
+                        ckboxService == null ||
+                        !isInteractive()
+                    ) {
+                        break
+                    }
+                    val speedInfo = Core.trafficJson()?.let(::trafficSpeedInfo) ?: continue
+                    updateNotificationSpeed(GlobalState.currentProfileName, speedInfo)
+                }
+            }
+        }
+    }
+
+    private fun stopSpeedTicker() {
+        synchronized(speedTickerLock) {
+            speedTickerJob?.cancel()
+            speedTickerJob = null
+        }
     }
 
     fun updateNotificationSpeed(profileName: String, speedInfo: String) {
         scope.launch {
             runCatching {
-                (ckboxService as? CkboxVpnService)?.updateNotificationSpeed(profileName, speedInfo)
+                when (val service = ckboxService) {
+                    is CkboxVpnService -> service.updateNotificationSpeed(profileName, speedInfo)
+                    is CkboxService -> service.updateNotificationSpeed(profileName, speedInfo)
+                    else -> Unit
+                }
             }.onFailure {
                 android.util.Log.e("VpnPlugin", "updateNotificationSpeed error: ${it.message}")
             }
@@ -550,9 +631,14 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     fun restoreNotification() {
+        stopSpeedTicker()
         scope.launch {
             runCatching {
-                (ckboxService as? CkboxVpnService)?.restoreNotification()
+                when (val service = ckboxService) {
+                    is CkboxVpnService -> service.restoreNotification()
+                    is CkboxService -> service.restoreNotification()
+                    else -> Unit
+                }
             }.onFailure {
                 android.util.Log.e("VpnPlugin", "restoreNotification error: ${it.message}")
             }
@@ -598,16 +684,13 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                     if (prepareIntent != null) {
                         android.util.Log.w("VpnPlugin", "VPN permission required before start")
                         GlobalState.updateRunState(RunState.STOP)
-                        withContext(Dispatchers.Main) {
-                            GlobalState.getCurrentAppPlugin()?.requestVpnPermission {
-                                handleStartService()
-                            }
-                        }
+                        ServicePlugin.notifyVpnStartFailed()
                         return@launch
                     }
                 }
 
                 val currentOptions = options
+                var wasSmartStopped = false
                 val startAllowed = GlobalState.runLock.withLock {
                     if (GlobalState.currentRunState == RunState.START) {
                         android.util.Log.d("VpnPlugin", "Service already running, refreshing notification")
@@ -619,6 +702,9 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                         GlobalState.updateRunState(RunState.STOP)
                         return@withLock false
                     }
+                    wasSmartStopped = GlobalState.isSmartStopped
+                    GlobalState.isSmartStopped = false
+                    GlobalState.smartStopOverride = wasSmartStopped
                     GlobalState.updateRunState(RunState.START)
                     lastStartForegroundParams = null
                     true
@@ -627,6 +713,10 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 if (!startAllowed || currentOptions == null) return@launch
 
                 performStartCore(currentOptions, retry = true, notifyOnFailure = true)
+                requestSmartAutoStopCheck()
+                if (wasSmartStopped) {
+                    ServicePlugin.notifyNetworkChanged()
+                }
             } catch (e: Exception) {
                 android.util.Log.e("VpnPlugin", "Fatal error in start flow: ${e.message}")
                 GlobalState.updateRunState(RunState.STOP)
@@ -639,6 +729,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         retry: Boolean,
         notifyOnFailure: Boolean
     ) {
+        resumeCore()
         var fd: Int? = 0
         try {
             fd = ckboxService?.start(currentOptions)
@@ -675,11 +766,20 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         }
         if (!canStart) return
 
-        com.ckbox.app.core.Core.startTun(
+        tunStartedAt = SystemClock.elapsedRealtime()
+        val tunStarted = com.ckbox.app.core.Core.startTun(
             fd = fd ?: 0,
             protect = this@VpnPlugin::protect,
             resolverProcess = this@VpnPlugin::resolverProcess,
         )
+        if (!tunStarted) {
+            android.util.Log.e("VpnPlugin", "Core startTun failed")
+            GlobalState.runLock.withLock { GlobalState.updateRunState(RunState.STOP) }
+            if (notifyOnFailure) {
+                ServicePlugin.notifyVpnStartFailed()
+            }
+            return
+        }
 
         GlobalState.runLock.withLock {
             if (GlobalState.currentRunState != RunState.START) {
@@ -690,6 +790,7 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 startForeground()
                 startStickyService()
             }
+            Core.screenStateChanged(isInteractive())
             if (currentOptions.dozeSuspend) {
                 suspendModule?.uninstall()
                 suspendModule = SuspendModule(CkboxApplication.getAppContext())
@@ -759,9 +860,13 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         val shouldForceStop: Boolean
         GlobalState.runLock.withLock {
             if (!force && GlobalState.currentRunState == RunState.STOP) return
+            GlobalState.isSmartStopped = false
+            GlobalState.smartStopOverride = false
             GlobalState.updateIsStopping(true)
             GlobalState.updateRunState(RunState.STOP)
-            ServicePlugin.notifyRunStateChanged(RunState.STOP)
+            if (!force) {
+                ServicePlugin.notifyRunStateChanged(RunState.STOP)
+            }
             serviceRef = ckboxService
             wasBound = isBind
             shouldForceStop = force || ckboxService == null
@@ -844,7 +949,6 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
             if (!startAllowed) return@launch
 
-            Core.suspended(false)
             (ckboxService as? CkboxService)?.resetNotificationBuilder()
             (ckboxService as? CkboxVpnService)?.resetNotificationBuilder()
             performStartCore(options, retry = false, notifyOnFailure = false)
@@ -854,6 +958,10 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             ServicePlugin.notifyNetworkChanged()
         }
         return true
+    }
+
+    fun resumeCore() {
+        Core.suspended(false)
     }
 
     private fun bindService() {

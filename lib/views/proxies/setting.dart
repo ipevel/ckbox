@@ -3,6 +3,7 @@ import 'package:ckbox/enum/enum.dart';
 import 'package:ckbox/providers/app.dart';
 import 'package:ckbox/providers/config.dart';
 import 'package:ckbox/widgets/widgets.dart';
+import 'package:ckbox/state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -76,12 +77,8 @@ class ProxiesSetting extends StatelessWidget {
                       onPressed: () {
                         ref
                             .read(proxiesStyleSettingProvider.notifier)
-                            .updateState((state) {
-                              return state.copyWith(
-                                type: item,
-                                hasCustomizedStyle: true,
-                              );
-                            });
+                            .updateState((state) => state.copyWith(type: item));
+                        globalState.appController.applyListIconStyle();
                       },
                     ),
                 ],
