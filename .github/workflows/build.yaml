@@ -353,6 +353,12 @@ jobs:
           fi
           sed -e "s|BASE_VERSION|$base_version|g" -e "s|VERSION|$version|g" "$template" > release.md
 
+      - name: Generate checksums
+        run: |
+          cd dist
+          find . -maxdepth 1 -type f ! -name 'sha256sums.txt' -printf '%f\n' | sort | xargs -r sha256sum > sha256sums.txt
+          cat sha256sums.txt
+
       - name: Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v3.0.0
