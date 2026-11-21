@@ -118,7 +118,9 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          # AGP 9.3.1 的 lint 运行时（intellij-core 32.3.1）调用了 Java 21 的
+          # List.removeLast，JDK 17 下会以 NoSuchMethodError 中断 release 构建
+          java-version: '21'
           cache: 'gradle'
 
       - name: Setup Android NDK
