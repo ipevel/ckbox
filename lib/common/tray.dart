@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:ckbox/enum/enum.dart';
 import 'package:ckbox/models/models.dart';
 import 'package:ckbox/state.dart';
@@ -49,7 +50,7 @@ class Tray {
     _loadingTimer?.cancel();
   }
 
-  Future _updateSystemTray({
+  Future<void> _updateSystemTray({
     required Brightness? brightness,
     required bool isStart,
     bool force = false,

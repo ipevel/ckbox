@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/enum/enum.dart';
 import 'package:ckbox/models/models.dart';
@@ -8,6 +10,7 @@ import 'package:ckbox/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'edit_profile.dart';
 import 'merge_profile.dart';
 import 'panel_login_view.dart';
@@ -20,7 +23,7 @@ class AddProfileView extends StatelessWidget {
   const AddProfileView({super.key, required this.context});
 
   Future<void> _handleAddProfileFormFile() async {
-    globalState.appController.addProfileFormFile();
+    unawaited(globalState.appController.addProfileFormFile());
   }
 
   Future<void> _handleAddProfileFormURL(
@@ -29,29 +32,31 @@ class AddProfileView extends StatelessWidget {
   }) async {
     final editKey = GlobalKey<EditProfileViewState>();
     final profile = Profile.normal(url: url, ageSecretKey: ageSecretKey);
-    showExtend(
-      context,
-      builder: (_, type) {
-        return AdaptiveSheetScaffold(
-          type: type,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.security),
-              tooltip: appLocalizations.ageKeyGenerateTitle,
-              onPressed: () {
-                editKey.currentState?.showAgeKeyGenerator();
-              },
+    unawaited(
+      showExtend(
+        context,
+        builder: (_, type) {
+          return AdaptiveSheetScaffold(
+            type: type,
+            actions: [
+              IconButton(
+                icon: const AppIcon(Icons.security),
+                tooltip: appLocalizations.ageKeyGenerateTitle,
+                onPressed: () {
+                  editKey.currentState?.showAgeKeyGenerator();
+                },
+              ),
+            ],
+            body: EditProfileView(
+              key: editKey,
+              profile: profile,
+              context: context,
+              isNew: true,
             ),
-          ],
-          body: EditProfileView(
-            key: editKey,
-            profile: profile,
-            context: context,
-            isNew: true,
-          ),
-          title: appLocalizations.importFromURL,
-        );
-      },
+            title: appLocalizations.importFromURL,
+          );
+        },
+      ),
     );
   }
 
@@ -78,7 +83,7 @@ class AddProfileView extends StatelessWidget {
         return;
       }
 
-      _handleAddProfileFormURL(text);
+      unawaited(_handleAddProfileFormURL(text));
     } catch (e) {
       if (context.mounted) {
         context.showSnackBar(e.toString());
@@ -88,7 +93,7 @@ class AddProfileView extends StatelessWidget {
 
   Future<void> _toScan() async {
     if (system.isDesktop) {
-      globalState.appController.addProfileFormQrCode();
+      unawaited(globalState.appController.addProfileFormQrCode());
       return;
     }
     if (globalState.isAndroidTV) {
@@ -98,7 +103,7 @@ class AddProfileView extends StatelessWidget {
       );
       return;
     }
-    final url = await BaseNavigator.push(context, const ScanPage());
+    final url = await BaseNavigator.push<String>(context, const ScanPage());
     if (url != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _handleAddProfileFormURL(url);
@@ -107,7 +112,7 @@ class AddProfileView extends StatelessWidget {
   }
 
   Future<void> _toAdd() async {
-    _handleAddProfileFormURL('');
+    unawaited(_handleAddProfileFormURL(''));
   }
 
   void _toMerge() {
@@ -137,7 +142,7 @@ class AddProfileView extends StatelessWidget {
         return CommonCard(
           type: CommonCardType.filled,
           child: ListItem(
-            leading: Icon(Icons.merge_type, color: available ? null : muted),
+            leading: AppIcon(Icons.merge_type, color: available ? null : muted),
             title: Text(appLocalizations.mergeProfile, style: style),
             subtitle: Text(
               available
@@ -156,7 +161,7 @@ class AddProfileView extends StatelessWidget {
     final accounts = await PanelAccountStore().load();
     if (!context.mounted) return;
     if (accounts.isNotEmpty) {
-      showExtend(
+      unawaited(showExtend(
         context,
         builder: (_, type) {
           return AdaptiveSheetScaffold(
@@ -165,10 +170,10 @@ class AddProfileView extends StatelessWidget {
             body: const PanelAccountsView(),
           );
         },
-      );
+      ));
       return;
     }
-    showExtend(
+    unawaited(showExtend(
       context,
       builder: (_, type) {
         return AdaptiveSheetScaffold(
@@ -181,7 +186,7 @@ class AddProfileView extends StatelessWidget {
           ),
         );
       },
-    );
+    ));
   }
 
   @override
@@ -196,7 +201,7 @@ class AddProfileView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListItem(
-                  leading: const Icon(Icons.qr_code_sharp),
+                  leading: const AppIcon(Icons.qr_code_sharp),
                   title: Text(appLocalizations.qrcode),
                   subtitle: Text(appLocalizations.qrcodeDesc),
                   onTap: _toScan,
@@ -213,7 +218,7 @@ class AddProfileView extends StatelessWidget {
                   endIndent: 16,
                 ),
                 ListItem(
-                  leading: const Icon(Icons.content_paste),
+                  leading: const AppIcon(Icons.content_paste),
                   title: Text(appLocalizations.clipboard),
                   subtitle: Text(appLocalizations.clipboardDesc),
                   onTap: _handleAddProfileFromClipboard,
@@ -230,7 +235,7 @@ class AddProfileView extends StatelessWidget {
                   endIndent: 16,
                 ),
                 ListItem(
-                  leading: const Icon(Icons.upload_file_sharp),
+                  leading: const AppIcon(Icons.upload_file_sharp),
                   title: Text(appLocalizations.file),
                   subtitle: Text(appLocalizations.fileDesc),
                   onTap: _handleAddProfileFormFile,
@@ -247,7 +252,7 @@ class AddProfileView extends StatelessWidget {
                   endIndent: 16,
                 ),
                 ListItem(
-                  leading: const Icon(Icons.cloud_download_sharp),
+                  leading: const AppIcon(Icons.cloud_download_sharp),
                   title: Text(appLocalizations.url),
                   subtitle: Text(appLocalizations.urlDesc),
                   onTap: _toAdd,

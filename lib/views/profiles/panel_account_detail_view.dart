@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/models/models.dart';
 import 'package:ckbox/state.dart';
@@ -415,7 +417,7 @@ class _AccountTab extends StatelessWidget {
                       }
                       return;
                     }
-                    globalState.openUrl(url, needConfirm: true);
+                    unawaited(globalState.openUrl(url, needConfirm: true));
                   } on PanelApiException catch (e) {
                     if (context.mounted) context.showSnackBar(e.message);
                   }

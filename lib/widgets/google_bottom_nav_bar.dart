@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/enum/enum.dart';
 import 'package:ckbox/models/common.dart';
@@ -49,12 +50,14 @@ class GoogleBottomNavBar extends ConsumerStatefulWidget {
   final List<NavigationItem> navigationItems;
   final int selectedIndex;
   final ValueChanged<int> onTabChange;
+  final ValueChanged<int>? onTabReselect;
 
   const GoogleBottomNavBar({
     super.key,
     required this.navigationItems,
     required this.selectedIndex,
     required this.onTabChange,
+    this.onTabReselect,
   });
 
   @override
@@ -207,7 +210,7 @@ class _GoogleBottomNavBarState extends ConsumerState<GoogleBottomNavBar>
     final navColor = navBarBodyColor(
       colorScheme,
       pureBlack,
-    ).withValues(alpha: 0.98);
+    ).withValues(alpha: 0.96);
     final shadowStrength = isLight ? 1.0 : 3.0;
 
     const itemTextStyle = TextStyle(
@@ -349,9 +352,12 @@ class _GoogleBottomNavBarState extends ConsumerState<GoogleBottomNavBar>
             }
 
             _velocityTracker = null;
+            final wasDragging = _isDragging;
             _isDragging = false;
             if (targetIndex != widget.selectedIndex) {
               widget.onTabChange(targetIndex);
+            } else if (!wasDragging) {
+              widget.onTabReselect?.call(targetIndex);
             }
           },
           onPointerCancel: (event) {
@@ -377,15 +383,13 @@ class _GoogleBottomNavBarState extends ConsumerState<GoogleBottomNavBar>
                 return RepaintBoundary(
                   child: Container(
                     height: barHeight,
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       color: navColor,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.transparent,
-                        width: 1,
-                        strokeAlign: BorderSide.strokeAlignInside,
+                      shape: RoundedSuperellipseBorder(
+                        borderRadius: BorderRadius.circular(barHeight / 2),
+                        side: const BorderSide(color: Colors.transparent),
                       ),
-                      boxShadow: [
+                      shadows: [
                         BoxShadow(
                           blurRadius: 24,
                           offset: const Offset(0, 8),
@@ -531,7 +535,11 @@ class _GoogleBottomNavBarState extends ConsumerState<GoogleBottomNavBar>
                                                 color: itemColor,
                                                 size: 22,
                                               ),
-                                              child: item.icon,
+                                              child:
+                                                  context.resolveIconWidget(
+                                                    item.icon,
+                                                  ) ??
+                                                  item.icon,
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
@@ -612,14 +620,14 @@ class NavBarPillPainter extends CustomPainter {
     final restingRadius = (size.height - 2 * _restingGap) / 2;
     final radius = restingRadius + (size.height / 2 - restingRadius) * t;
     final alpha = baseAlpha + (activeAlpha - baseAlpha) * t;
-    canvas.clipRRect(
-      RRect.fromRectAndRadius(
+    canvas.clipRSuperellipse(
+      RSuperellipse.fromRectAndRadius(
         Offset.zero & size,
         Radius.circular(size.height / 2),
       ),
     );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(pillRect(size), Radius.circular(radius)),
+    canvas.drawRSuperellipse(
+      RSuperellipse.fromRectAndRadius(pillRect(size), Radius.circular(radius)),
       Paint()..color = color.withValues(alpha: alpha),
     );
   }

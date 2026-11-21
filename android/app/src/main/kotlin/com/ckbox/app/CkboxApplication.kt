@@ -18,6 +18,7 @@ class CkboxApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        GlobalState.updateIsStopping(false)
         FlutterInjector.instance().flutterLoader().startInitialization(this)
         engineGroup = FlutterEngineGroup(this)
     }

@@ -259,7 +259,7 @@ class PanelClient {
     final data = body['data'];
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelNotice.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -275,7 +275,7 @@ class PanelClient {
     );
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelTicket.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -346,7 +346,7 @@ class PanelClient {
     );
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelTrafficLog.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -365,7 +365,7 @@ class PanelClient {
     );
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelSession.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -434,7 +434,7 @@ class PanelClient {
     );
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelPlan.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -450,7 +450,7 @@ class PanelClient {
     );
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelPaymentMethod.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -523,7 +523,7 @@ class PanelClient {
     );
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelOrder.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -603,7 +603,7 @@ class PanelClient {
     final data = body['data'];
     if (data is! List) return const [];
     return data
-        .whereType<Map>()
+        .whereType<Map<String, Object?>>()
         .map((e) => PanelCommissionLog.fromJson(Map<String, Object?>.from(e)))
         .toList();
   }
@@ -847,7 +847,7 @@ class PanelTicket {
       subject: json['subject'] as String? ?? '',
       messages: messages is List
           ? messages
-              .whereType<Map>()
+              .whereType<Map<String, Object?>>()
               .map((e) => PanelTicketMessage.fromJson(
                     Map<String, Object?>.from(e),
                   ))
@@ -1178,7 +1178,7 @@ class PanelInvite {
     return PanelInvite(
       codes: codes is List
           ? codes
-              .whereType<Map>()
+              .whereType<Map<String, Object?>>()
               .map((e) => PanelInviteCode.fromJson(
                     Map<String, Object?>.from(e),
                   ))

@@ -19,6 +19,7 @@ void main() {
     final controller = CodeForgeController()
       ..text = '$key$value'
       ..selection = const TextSelection.collapsed(offset: 20);
+    addTearDown(controller.dispose);
     const red = Color(0xFFFF0000);
     final info = ValueNotifier(
       const MagnifierInfo(
@@ -84,6 +85,7 @@ void main() {
     final controller = CodeForgeController()
       ..text = 'DOMAIN-SUFFIX,gtzszy.com,cn'
       ..selection = const TextSelection(baseOffset: 10, extentOffset: 21);
+    addTearDown(controller.dispose);
     final info = ValueNotifier(
       const MagnifierInfo(
         globalGesturePosition: Offset(200, 200),

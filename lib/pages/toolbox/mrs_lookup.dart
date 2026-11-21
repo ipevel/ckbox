@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ckbox/clash/clash.dart';
 import 'package:ckbox/common/common.dart';
 import 'package:ckbox/enum/enum.dart';
@@ -86,7 +88,7 @@ class _MrsLookupPageState extends ConsumerState<MrsLookupPage>
           tooltip: appLocalizations.settings,
           onPressed: () =>
               globalState.showCommonDialog(child: const _MrsSettingsDialog()),
-          icon: const Icon(Icons.settings_outlined),
+          icon: const AppIcon(Icons.settings_outlined),
         ),
       ],
       body: ToolPageBody(
