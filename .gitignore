@@ -91,3 +91,6 @@ app.*.map.json
 # ckbox panel integration local state (never commit credentials)
 /panel_state.json
 /test/private/
+
+# Octop 运行时产物（非工程内容）
+/.octop/
