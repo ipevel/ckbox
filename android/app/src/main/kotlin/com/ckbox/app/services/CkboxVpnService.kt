@@ -21,6 +21,7 @@ import com.ckbox.app.extensions.getIpv6RouteAddress
 import com.ckbox.app.extensions.toCIDR
 import com.ckbox.app.models.AccessControlMode
 import com.ckbox.app.models.VpnOptions
+import com.ckbox.app.plugins.ServicePlugin
 import com.ckbox.app.plugins.VpnPlugin
 import com.ckbox.app.R
 import kotlinx.coroutines.CoroutineScope
@@ -163,7 +164,7 @@ class CkboxVpnService : VpnService(), BaseServiceInterface {
         }
 
         val fd = runCatching { establish()?.detachFd() }.getOrElse { e ->
-            Log.e(TAG, "Establish VPN exception: ${e.message}")
+            ServicePlugin.appWarn(TAG, "Establish VPN failed: ${e.message}")
             null
         }
         if (fd != null && fd > 0) {
@@ -345,6 +346,7 @@ class CkboxVpnService : VpnService(), BaseServiceInterface {
     }
 
     override fun onRevoke() {
+        ServicePlugin.appWarn(TAG, "VPN revoked by system")
         runCatching {
             VpnPlugin.handleStop()
             getSystemService(android.app.NotificationManager::class.java)
