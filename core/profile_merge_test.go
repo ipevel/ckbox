@@ -251,6 +251,100 @@ func TestMergeHostsKeepFirst(t *testing.T) {
 	}
 }
 
+func TestMergeNodesOnlyKeepsProxiesOfWorkingConfig(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name string, value map[string]any) string {
+		data, err := json.Marshal(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	relay := mergeProxy("中转", "relay.com")
+	landing := mergeProxy("落地", "land.com")
+	landing["dialer-proxy"] = "中转"
+	orphan := mergeProxy("悬空", "orphan.com")
+	orphan["dialer-proxy"] = "不存在"
+	first := write("a.json", map[string]any{
+		"proxies": []any{relay, landing, orphan},
+		"dns": map[string]any{
+			"nameserver-policy": map[string]any{
+				"rule-set:cn": []any{"223.5.5.5"},
+				"+.a.com":     []any{"223.5.5.5"},
+			},
+		},
+		"rules":             []any{"MATCH,DIRECT"},
+		"proxy-groups":      []any{mergeGroup("默认代理", "中转")},
+		"rule-providers":    map[string]any{"cn": map[string]any{"type": "file"}},
+		"mixed-port":        7890,
+		"log-level":         "info",
+		"external-ui":       "ui",
+		"geodata-mode":      true,
+		"tun":               map[string]any{"enable": true},
+		"sniffer":           map[string]any{"enable": true},
+		"profile":           map[string]any{"store-selected": true},
+		"interface-name":    "eth0",
+		"routing-mark":      255,
+		"find-process-mode": "strict",
+	})
+	output := filepath.Join(dir, "nodes.yaml")
+	result, err := handleMergeProfiles(&MergeProfilesParams{
+		Output:    output,
+		Members:   []MergeMember{{Prefix: "A", Path: first}},
+		NodesOnly: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report MergeReport
+	if err := json.Unmarshal([]byte(result), &report); err != nil {
+		t.Fatal(err)
+	}
+	if report.Proxies != 2 || report.Groups != 1 {
+		t.Fatalf("report = %+v", report)
+	}
+	data, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, unwanted := range []string{"rule-set:cn", "rule-providers", "mixed-port", "log-level", "external-ui", "geodata-mode", "sniffer", "store-selected", "interface-name", "routing-mark", "find-process-mode", "悬空"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("nodes-only merge must drop %q:\n%s", unwanted, text)
+		}
+	}
+	if !strings.Contains(text, "+.a.com") {
+		t.Fatalf("nodes-only merge must keep plain dns policy keys:\n%s", text)
+	}
+	if !strings.Contains(text, "dialer-proxy: '[ A ] - 中转'\n") {
+		t.Fatalf("dialer-proxy must be rewritten:\n%s", text)
+	}
+	if !strings.Contains(text, "- name: Proxy\n") || !strings.Contains(text, "- MATCH,Proxy\n") {
+		t.Fatalf("nodes-only merge must build a single proxy group:\n%s", text)
+	}
+	parsed, err := config.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(parsed.Rules) != 1 {
+		t.Fatalf("parsed profile has %d rules", len(parsed.Rules))
+	}
+	for _, name := range []string{"[ A ] - 中转", "[ A ] - 落地", "Proxy"} {
+		if _, ok := parsed.Proxies[name]; !ok {
+			t.Fatalf("parsed profile is missing %q", name)
+		}
+	}
+	for _, name := range []string{"[ A ] - 悬空", "悬空"} {
+		if _, ok := parsed.Proxies[name]; ok {
+			t.Fatalf("parsed profile must not keep %q", name)
+		}
+	}
+}
+
 func TestHandleMergeProfilesWritesValidProfile(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name string, value map[string]any) string {
