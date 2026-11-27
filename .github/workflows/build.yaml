@@ -175,6 +175,15 @@ jobs:
         shell: bash
         run: rm -f ~/.pub-cache/credentials.json 2>/dev/null || true
 
+      - name: Configure Gradle Maven Central mirror (Android)
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          # 发布构建期间 Maven Central 会对并发请求返回 429，导致依赖解析中断。
+          # 注入 init 脚本后，所有构建（含 Flutter 工具链的 included build）优先走镜像。
+          mkdir -p ~/.gradle/init.d
+          cp .github/scripts/gradle-central-mirror.init.gradle.kts ~/.gradle/init.d/
+
       - name: Clean Gradle (Android)
         if: matrix.platform == 'android'
         run: |
