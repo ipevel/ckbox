@@ -220,15 +220,27 @@ void main() {
       0,
       routed.content.length - plain.content.length,
     );
-    expect(prelude.startsWith('const ckboxRoutes = '), isTrue);
+    final lines = prelude.trimRight().split('\n');
+    const routesPrefix = 'const ckboxRoutes = ';
+    const depsPrefix = 'const ckboxRuleDeps = ';
+    expect(lines.first.startsWith(routesPrefix), isTrue);
     final routes =
         jsonDecode(
-          prelude.substring(
-            'const ckboxRoutes = '.length,
-            prelude.length - 2,
-          ),
-        ) as List;
+              lines.first.substring(
+                routesPrefix.length,
+                lines.first.length - 1,
+              ),
+            )
+            as List;
     expect(routes.length, 2);
+    expect(lines.length, 2);
+    expect(lines.last.startsWith(depsPrefix), isTrue);
+    final deps =
+        jsonDecode(
+              lines.last.substring(depsPrefix.length, lines.last.length - 1),
+            )
+            as List;
+    expect(deps, contains(equals(['Date', 'Google'])));
     final first = routes.first as Map;
     expect(first['name'], 'Date');
     expect(first['target'], '美国');

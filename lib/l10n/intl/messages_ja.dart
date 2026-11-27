@@ -594,7 +594,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "directModeNoProxy": MessageLookupByLibrary.simpleMessage(
       "ダイレクトモード、プロキシなし",
     ),
-    "directUpdate": MessageLookupByLibrary.simpleMessage("直接接続で更新"),
     "disableQuic": MessageLookupByLibrary.simpleMessage("QUIC無効化"),
     "disableQuicDesc": MessageLookupByLibrary.simpleMessage(
       "特定の通信問題を緩和するためQUICを無効化",
@@ -805,7 +804,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "go": MessageLookupByLibrary.simpleMessage("移動"),
     "goDownload": MessageLookupByLibrary.simpleMessage("ダウンロードへ"),
     "groupOrderTip": MessageLookupByLibrary.simpleMessage(
-      "ドラッグで表示順を変更（カスタム振り分けを優先照合）",
+      "ドラッグでグループの順序を変更（確認して保存すると反映されます）",
     ),
     "harmonyFont": MessageLookupByLibrary.simpleMessage("フォント修復"),
     "harmonyFontDesc": MessageLookupByLibrary.simpleMessage(
@@ -1083,6 +1082,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Dock にアプリアイコンを表示",
     ),
     "key": MessageLookupByLibrary.simpleMessage("キー"),
+    "lanFirewallTip": MessageLookupByLibrary.simpleMessage(
+      "システムのファイアウォールで許可されるまで、LAN 上のデバイスは Ckbox コアに接続できません。ローカルサブネットのデバイスのみを許可するファイアウォール規則を追加しますか？管理者の承認が必要です。",
+    ),
     "lanSharing": MessageLookupByLibrary.simpleMessage("LAN共有"),
     "landingNode": MessageLookupByLibrary.simpleMessage("ランディングノード"),
     "landingNodeDesc": MessageLookupByLibrary.simpleMessage(
@@ -1103,6 +1105,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "local": MessageLookupByLibrary.simpleMessage("ローカル"),
     "localBackupDesc": MessageLookupByLibrary.simpleMessage("ローカルにデータをバックアップ"),
     "localFile": MessageLookupByLibrary.simpleMessage("ローカルファイル"),
+    "localNetworkPermissionTip": MessageLookupByLibrary.simpleMessage(
+      "LAN 共有には「ローカルネットワーク」権限が必要です。システム設定で Ckbox に許可してください。",
+    ),
     "localPing": MessageLookupByLibrary.simpleMessage("ローカル Ping"),
     "localPingAverage": MessageLookupByLibrary.simpleMessage("平均遅延"),
     "localPingBytes": m35,
@@ -1423,7 +1428,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "nodeTestFailed": MessageLookupByLibrary.simpleMessage("利用不可"),
     "nodesSort": MessageLookupByLibrary.simpleMessage("ノードの並び替え"),
     "nonManagedRuleTip": MessageLookupByLibrary.simpleMessage(
-      "マネージドモードではないため、現在のプロファイルにのみ適用されます",
+      "ルールを追加しました（現在のプロファイルのみ）",
     ),
     "none": MessageLookupByLibrary.simpleMessage("なし"),
     "notRecommended": MessageLookupByLibrary.simpleMessage("非推奨"),
@@ -1757,7 +1762,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "ruleProviders": MessageLookupByLibrary.simpleMessage("ルールプロバイダー"),
     "ruleProvidersCount": MessageLookupByLibrary.simpleMessage("ルールセット"),
     "ruleSets": MessageLookupByLibrary.simpleMessage("ルールセット"),
-    "ruleSort": MessageLookupByLibrary.simpleMessage("ルールの順序"),
+    "ruleSort": MessageLookupByLibrary.simpleMessage("グループの順序"),
     "ruleTarget": MessageLookupByLibrary.simpleMessage("ルールターゲット"),
     "ruleTypeDesc": m69,
     "ruleTypeName": m70,

@@ -464,6 +464,8 @@ _NetworkProps _$NetworkPropsFromJson(Map<String, dynamic> json) =>
             json['profileSwitchMode'],
           ) ??
           ProfileSwitchMode.hotReload,
+      bypassDomainRevision:
+          (json['bypassDomainRevision'] as num?)?.toInt() ?? 1,
     );
 
 Map<String, dynamic> _$NetworkPropsToJson(
@@ -474,6 +476,7 @@ Map<String, dynamic> _$NetworkPropsToJson(
   'bypassPrivateRoute': instance.bypassPrivateRoute,
   'bypassPrivateRouteAddress': instance.bypassPrivateRouteAddress,
   'profileSwitchMode': _$ProfileSwitchModeEnumMap[instance.profileSwitchMode]!,
+  'bypassDomainRevision': instance.bypassDomainRevision,
 };
 
 const _$ProfileSwitchModeEnumMap = {

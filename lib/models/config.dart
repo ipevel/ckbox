@@ -10,7 +10,16 @@ import 'models.dart';
 part 'generated/config.freezed.dart';
 part 'generated/config.g.dart';
 
+const _restoredBypassDomain = [
+  '*.jd.com',
+  '*.360buyimg.com',
+  '*.zhihu.com',
+  '*.zhimg.com',
+  '*.qq.com',
+];
+
 const defaultBypassDomain = [
+  ..._restoredBypassDomain,
   'localhost',
   '127.*',
   '[::1]',
@@ -351,13 +360,9 @@ abstract class VpnProps with _$VpnProps {
 const _removedBypassDomain = {
   '::1',
   '*jd.com',
-  '*.jd.com',
   '*zhihu.com',
-  '*.zhihu.com',
   '*zhimg.com',
-  '*.zhimg.com',
   '*360buyimg.com',
-  '*.360buyimg.com',
 };
 
 List<String> bypassDomainSafeFromJson(List<dynamic>? bypassDomain) {
@@ -388,6 +393,7 @@ abstract class NetworkProps with _$NetworkProps {
     @Default(true) bool bypassPrivateRoute,
     @Default([]) List<String> bypassPrivateRouteAddress,
     @Default(ProfileSwitchMode.hotReload) ProfileSwitchMode profileSwitchMode,
+    @Default(1) int bypassDomainRevision,
   }) = _NetworkProps;
 
   factory NetworkProps.fromJson(Map<String, Object?>? json) =>
@@ -483,7 +489,9 @@ extension ScriptPropsExt on ScriptProps {
       scripts.where((script) => script.id == id).firstOrNull;
 
   Script? scriptOf(Profile profile) =>
-      profile.isManaged ? null : findScript(profile.scriptId);
+      profile.isManaged || profile.bundle?.scriptKey != null
+      ? null
+      : findScript(profile.scriptId);
 
   Future<ScriptProps> externalize() async {
     if (scripts.every((script) => script.content.isEmpty)) return this;
@@ -674,8 +682,56 @@ abstract class Config with _$Config {
       }
     } catch (_) {}
 
-    return Config.fromJson(json);
+    try {
+      final networkProps = json['networkProps'];
+      final bypassDomain = networkProps is Map
+          ? networkProps['bypassDomain']
+          : null;
+      if (networkProps is Map && networkProps['bypassDomainRevision'] == null) {
+        if (bypassDomain is List) {
+          networkProps['bypassDomain'] = [
+            ..._restoredBypassDomain.where((e) => !bypassDomain.contains(e)),
+            ...bypassDomain,
+          ];
+        }
+        networkProps['bypassDomainRevision'] = 1;
+      }
+    } catch (_) {}
+
+    try {
+      return Config.fromJson(json);
+    } catch (e) {
+      commonPrint.warn('Config partially invalid: $e');
+      return Config.fromJson(_dropInvalidSections(json));
+    }
   }
+}
+
+bool _isValidConfig(Map<String, Object?> json) {
+  try {
+    Config.fromJson(json);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+Map<String, Object?> _dropInvalidSections(Map<String, Object?> json) {
+  final result = <String, Object?>{};
+  for (final MapEntry(:key, :value) in json.entries) {
+    if (_isValidConfig({key: value})) {
+      result[key] = value;
+    } else if (value is List) {
+      result[key] = [
+        for (final item in value)
+          if (_isValidConfig({
+            key: [item],
+          }))
+            item,
+      ];
+    }
+  }
+  return result;
 }
 
 const _legacySkipDstAddress = {

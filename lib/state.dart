@@ -79,7 +79,9 @@ class GlobalState {
   bool _isExecutingTasks = false;
   bool _needsTaskRestart = false;
   Timer? _backgroundCoreGcTimer;
+  int _backgroundCoreGcToken = 0;
   Timer? _backgroundCleanupTimer;
+  DateTime? _backgroundCleanupAt;
   final Lock _scriptEvaluateLock = Lock();
   int _relayStamp = 0;
   bool isInit = false;
@@ -364,10 +366,12 @@ class GlobalState {
     }
     backgroundMode.value = false;
     windows?.setBackgroundMemoryPriority(false);
+    _backgroundCoreGcToken++;
     _backgroundCoreGcTimer?.cancel();
     _backgroundCoreGcTimer = null;
     _backgroundCleanupTimer?.cancel();
     _backgroundCleanupTimer = null;
+    _backgroundCleanupAt = null;
     _syncVpnState();
   }
 
@@ -403,35 +407,59 @@ class GlobalState {
   }
 
   void _scheduleBackgroundCleanup() {
-    _backgroundCoreGcTimer?.cancel();
-    _backgroundCoreGcTimer = Timer(const Duration(seconds: 30), () {
-      _backgroundCoreGcTimer = null;
-      if (!backgroundMode.value) {
-        return;
-      }
-      _checkAndRunBackgroundCoreGc();
-    });
-
-    _backgroundCleanupTimer?.cancel();
-    _backgroundCleanupTimer = Timer(
-      Duration(seconds: system.isAndroid ? 180 : 300),
-      () {
-        _backgroundCleanupTimer = null;
-        if (!backgroundMode.value) {
-          return;
-        }
-        cleanupBackgroundResources();
-      },
+    _scheduleBackgroundCoreGc(const Duration(seconds: 30), idleOnly: true);
+    _scheduleBackgroundResourceCleanup(
+      DateTime.now().add(Duration(seconds: system.isAndroid ? 180 : 300)),
     );
   }
 
-  Future<void> _checkAndRunBackgroundCoreGc() async {
-    if (!backgroundMode.value) return;
+  void _scheduleBackgroundResourceCleanup(DateTime at) {
+    _backgroundCleanupAt = at;
+    _backgroundCleanupTimer?.cancel();
+    _backgroundCleanupTimer = Timer(at.difference(DateTime.now()), () {
+      _backgroundCleanupTimer = null;
+      _backgroundCleanupAt = null;
+      if (!backgroundMode.value) {
+        return;
+      }
+      cleanupBackgroundResources();
+    });
+  }
+
+  void _scheduleBackgroundCoreGc(Duration delay, {required bool idleOnly}) {
+    _backgroundCoreGcTimer?.cancel();
+    final token = ++_backgroundCoreGcToken;
+    _backgroundCoreGcTimer = Timer(delay, () {
+      _backgroundCoreGcTimer = null;
+      if (!backgroundMode.value || token != _backgroundCoreGcToken) {
+        return;
+      }
+      unawaited(_checkAndRunBackgroundCoreGc(token, idleOnly));
+    });
+  }
+
+  Future<void> _checkAndRunBackgroundCoreGc(int token, bool idleOnly) async {
+    if (!backgroundMode.value || !isInit || token != _backgroundCoreGcToken) {
+      return;
+    }
     try {
-      await clashCore.requestGc(
+      final executed = await clashCore.requestGc(
         forceFreeOSMemory: true,
-        purge: system.isAndroid,
+        purge: !system.isWindows,
+        idleOnly: idleOnly,
       );
+      if (executed ||
+          !idleOnly ||
+          !backgroundMode.value ||
+          token != _backgroundCoreGcToken) {
+        return;
+      }
+      const postpone = Duration(seconds: 30);
+      _scheduleBackgroundCoreGc(postpone, idleOnly: false);
+      final cleanupAt = _backgroundCleanupAt;
+      if (cleanupAt != null) {
+        _scheduleBackgroundResourceCleanup(cleanupAt.add(postpone));
+      }
     } catch (e) {
       commonPrint.debug('Background requestGc ignored: $e');
     }
@@ -726,6 +754,10 @@ class GlobalState {
   bool _scriptActive(Profile profile) =>
       profile.runsManagedScript || config.scriptProps.scriptOf(profile) != null;
 
+  bool _groupSwitchesIgnored(Profile profile) =>
+      profile.isManaged ||
+      config.scriptProps.findScript(profile.scriptId) != null;
+
   Future<SetupParams?> buildValidateParams(Profile profile) async {
     final currentProfileId = config.currentProfileId;
     if (isService ||
@@ -910,15 +942,21 @@ class GlobalState {
     Profile profile,
     Script script, {
     bool managed = false,
+    bool expandProviders = false,
     bool refresh = false,
     bool cache = true,
   }) async {
+    final expand = managed || expandProviders;
     final stamp = _nextRelayStamp;
     final relayPath = await appPath.relayPath;
     final separator = Platform.pathSeparator;
     final file = File('$relayPath${separator}scripted-$stamp.json');
-    final stem =
-        '$relayPath${separator}cache-${profile.id}${managed ? '-managed' : ''}';
+    final suffix = managed
+        ? '-managed'
+        : expand
+        ? '-expanded'
+        : '';
+    final stem = '$relayPath${separator}cache-${profile.id}$suffix';
     return _scriptEvaluateLock.synchronized(() async {
       unawaited(_sweepRelay(relayPath));
       final cacheFile = File('$stem.json');
@@ -933,7 +971,7 @@ class GlobalState {
       }
       final key = !cache || volatile
           ? null
-          : await _scriptedCacheKey(profile, script, digest, managed: managed);
+          : await _scriptedCacheKey(profile, script, digest, managed: expand);
       final exported = File('$relayPath${separator}profile-$stamp.json');
       try {
         if (!refresh &&
@@ -947,7 +985,7 @@ class GlobalState {
         await _exportProfileConfig(
           profile,
           exported.path,
-          managed: managed,
+          managed: expand,
           refresh: refresh,
         );
         await JavaScriptRuntimeManager.evaluateScriptFile(
@@ -1145,7 +1183,7 @@ class GlobalState {
       'global-ua': patchConfig.globalUa,
     };
 
-    final scriptActive = profile.isManaged || _scriptActive(profile);
+    final scriptActive = _groupSwitchesIgnored(profile);
     final overrideData = profile.overrideData;
     final listenPorts = patchConfig.listenPorts;
 
@@ -1248,7 +1286,8 @@ class GlobalState {
       if (scripted != null) return scripted;
     }
     final ageSecretKey = profile?.ageSecretKey;
-    final disabledGroups = effective && profile != null
+    final disabledGroups =
+        effective && profile != null && !_groupSwitchesIgnored(profile)
         ? [
             for (final entry in profile.groupSwitches.entries)
               if (!entry.value) entry.key,

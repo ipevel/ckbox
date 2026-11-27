@@ -89,7 +89,6 @@ abstract class Profile with _$Profile {
     @Default(false) bool managedStyleApplied,
     String? ageSecretKey,
     @Default(false) bool skipCertVerify,
-    @Default(false) bool directUpdate,
     String? userAgent,
     @JsonKey(name: 'group-switches')
     @Default({})
@@ -144,6 +143,7 @@ abstract class ProfileBundle with _$ProfileBundle {
     @Default(BundleReport()) BundleReport report,
     @Default({}) Map<String, String> failures,
     @Default(false) bool collapsed,
+    String? scriptKey,
   }) = _ProfileBundle;
 
   factory ProfileBundle.fromJson(Map<String, Object?> json) =>
@@ -345,7 +345,6 @@ extension ProfileExtension on Profile {
       final source = await request.fetchProfileSource(
         url,
         downloadPath,
-        direct: directUpdate,
         skipCertVerify: skipCertVerify,
         userAgent: userAgent,
       );
